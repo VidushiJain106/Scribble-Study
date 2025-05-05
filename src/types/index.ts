@@ -66,3 +66,16 @@ export type PenSize =
   | "small"
   | "medium"
   | "large";
+
+export type MessageRole = 
+  | "user" 
+  | "assistant" 
+  | "system";
+
+export interface Message {
+  id: string;
+  content: string;
+  role: MessageRole;
+  timestamp: Date;
+  isError?: boolean;
+}
