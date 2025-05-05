@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotePage from "./pages/NotePage";
 import NotFound from "./pages/NotFound";
+import { Chatbot } from "./components/Chat/Chatbot";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/note/:id" element={<NotePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <Chatbot />
         <Toaster />
         <Sonner />
       </BrowserRouter>

@@ -1,4 +1,3 @@
-
 export type NoteCategory = 
   | "personal"
   | "work"
@@ -66,3 +65,25 @@ export type PenSize =
   | "small"
   | "medium"
   | "large";
+
+export type ChatMessageRole = "user" | "assistant" | "system";
+
+export interface ChatMessage {
+  id: string;
+  content: string;
+  role: ChatMessageRole;
+  timestamp: Date;
+}
+
+export interface ChatState {
+  messages: ChatMessage[];
+  isOpen: boolean;
+  hasNewMessage: boolean;
+  isLoading: boolean;
+  
+  addMessage: (content: string, role: ChatMessageRole) => void;
+  toggleChat: () => void;
+  markAsRead: () => void;
+  setLoading: (loading: boolean) => void;
+  analyzeNote: (note: Note) => void;
+}
