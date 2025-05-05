@@ -196,13 +196,26 @@ export function Editor({ noteId }: EditorProps) {
         </TabsContent>
         
         <TabsContent value="draw" className="flex-1 flex flex-col">
-          <div className="p-2">
+          <div className="p-2 sticky top-0 z-10 bg-background">
             <ToolBar />
           </div>
           <Separator />
           <div className="flex-1 relative bg-card">
             <DrawingCanvas onDrawingComplete={handleDrawingComplete} />
           </div>
+          
+          {note.drawings && note.drawings.length > 0 && (
+            <div className="p-4 border-t">
+              <h3 className="text-sm font-medium mb-2">Saved Drawings</h3>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {note.drawings.map((drawing, index) => (
+                  <Card key={drawing.id} className="flex-shrink-0 w-24 h-24 flex items-center justify-center">
+                    <span className="text-xs text-muted-foreground">Drawing {index + 1}</span>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

@@ -1,3 +1,4 @@
+
 export type NoteCategory = 
   | "personal"
   | "work"
@@ -47,11 +48,14 @@ export interface DrawPath {
   points: Point[];
   color: string;
   width: number;
+  opacity?: number;
+  tool?: Tool;
 }
 
 export interface Point {
   x: number;
   y: number;
+  pressure?: number;
 }
 
 export type Tool = 
@@ -59,12 +63,23 @@ export type Tool =
   | "pen"
   | "highlighter"
   | "eraser"
-  | "text";
+  | "text"
+  | "marker"
+  | "pencil"
+  | "brush"
+  | "shape";
 
 export type PenSize = 
   | "small"
   | "medium"
-  | "large";
+  | "large"
+  | "xlarge";
+
+export type Shape = 
+  | "rectangle" 
+  | "circle" 
+  | "line" 
+  | "arrow";
 
 export type ChatMessageRole = "user" | "assistant" | "system";
 

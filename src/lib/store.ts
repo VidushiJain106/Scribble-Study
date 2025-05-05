@@ -1,7 +1,6 @@
-
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { Note, NoteCategory, NoteColor, Tool, PenSize, Drawing, Attachment, DrawPath } from '@/types';
+import { Note, NoteCategory, NoteColor, Tool, PenSize, Drawing, Attachment, DrawPath, Shape } from '@/types';
 
 interface NoteState {
   notes: Note[];
@@ -9,8 +8,10 @@ interface NoteState {
   activeTool: Tool;
   penColor: string;
   penSize: PenSize;
+  penOpacity: number;
   isDrawing: boolean;
   currentPaths: DrawPath[];
+  activeShape: Shape;
   
   // Actions
   createNote: (category?: NoteCategory, color?: NoteColor) => string;
@@ -20,10 +21,14 @@ interface NoteState {
   setActiveTool: (tool: Tool) => void;
   setPenColor: (color: string) => void;
   setPenSize: (size: PenSize) => void;
+  setPenOpacity: (opacity: number) => void;
   setIsDrawing: (isDrawing: boolean) => void;
+  setActiveShape: (shape: Shape) => void;
   addDrawingToNote: (noteId: string, paths: DrawPath[]) => void;
   addAttachmentToNote: (noteId: string, attachment: Omit<Attachment, 'id' | 'createdAt'>) => void;
   removeAttachmentFromNote: (noteId: string, attachmentId: string) => void;
+  undoDrawing: () => void;
+  redoDrawing: () => void;
 }
 
 export const useNoteStore = create<NoteState>((set) => ({
@@ -66,9 +71,11 @@ export const useNoteStore = create<NoteState>((set) => ({
   activeTool: 'pen',
   penColor: '#9b87f5',
   penSize: 'medium',
+  penOpacity: 1,
   isDrawing: false,
   currentPaths: [],
-
+  activeShape: 'rectangle',
+  
   createNote: (category = 'uncategorized' as NoteCategory, color = 'purple' as NoteColor) => {
     const id = uuidv4();
     const newNote: Note = {
@@ -124,8 +131,16 @@ export const useNoteStore = create<NoteState>((set) => ({
     set({ penSize: size });
   },
   
+  setPenOpacity: (opacity) => {
+    set({ penOpacity: opacity });
+  },
+  
   setIsDrawing: (isDrawing) => {
     set({ isDrawing });
+  },
+  
+  setActiveShape: (shape) => {
+    set({ activeShape: shape });
   },
   
   addDrawingToNote: (noteId, paths) => {
@@ -195,5 +210,21 @@ export const useNoteStore = create<NoteState>((set) => ({
       
       return { notes: updatedNotes };
     });
+  },
+  
+  undoDrawing: () => {
+    set(state => {
+      if (state.currentPaths.length === 0) return state;
+      
+      const updatedPaths = [...state.currentPaths];
+      updatedPaths.pop();
+      
+      return { currentPaths: updatedPaths };
+    });
+  },
+  
+  redoDrawing: () => {
+    // This would need to store redoable paths, but for simplicity we're just adding a stub
+    return;
   }
 }));

@@ -8,7 +8,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNoteStore } from "@/lib/store";
 import { PenSize, Tool } from "@/types";
-import { Eraser, MousePointer, PenLine, Text, Highlighter } from "lucide-react";
+import { 
+  Eraser, 
+  MousePointer, 
+  PenLine, 
+  Text, 
+  Highlighter, 
+  Brush, 
+  Pencil, 
+  Square
+} from "lucide-react";
+import { ShapeSelector } from "./DrawingTools/ShapeSelector";
+import { OpacitySelector } from "./DrawingTools/OpacitySelector";
+import { UndoRedoButtons } from "./DrawingTools/UndoRedoButtons";
+import { Separator } from "@/components/ui/separator";
 
 export function ToolBar() {
   const activeTool = useNoteStore(state => state.activeTool);
@@ -24,7 +37,11 @@ export function ToolBar() {
     pen: <PenLine className="h-4 w-4" />,
     highlighter: <Highlighter className="h-4 w-4" />,
     eraser: <Eraser className="h-4 w-4" />,
-    text: <Text className="h-4 w-4" />
+    text: <Text className="h-4 w-4" />,
+    marker: <Highlighter className="h-4 w-4" />,
+    pencil: <Pencil className="h-4 w-4" />,
+    brush: <Brush className="h-4 w-4" />,
+    shape: <Square className="h-4 w-4" />
   };
   
   const toolTips: Record<Tool, string> = {
@@ -32,8 +49,23 @@ export function ToolBar() {
     pen: "Pen",
     highlighter: "Highlighter",
     eraser: "Eraser",
-    text: "Text"
+    text: "Text",
+    marker: "Marker",
+    pencil: "Pencil",
+    brush: "Brush",
+    shape: "Shape"
   };
+  
+  const displayedTools: Tool[] = [
+    "select", 
+    "pen", 
+    "pencil", 
+    "brush", 
+    "highlighter", 
+    "eraser", 
+    "text", 
+    "shape"
+  ];
   
   const colorOptions = [
     { name: "Black", value: "#000000" },
@@ -43,12 +75,16 @@ export function ToolBar() {
     { name: "Yellow", value: "#fbbf24" },
     { name: "Orange", value: "#f97316" },
     { name: "Red", value: "#ef4444" },
+    { name: "Gray", value: "#6b7280" },
+    { name: "Pink", value: "#ec4899" },
+    { name: "Teal", value: "#14b8a6" },
   ];
   
   const sizeOptions: { name: string; value: PenSize }[] = [
     { name: "Small", value: "small" },
     { name: "Medium", value: "medium" },
-    { name: "Large", value: "large" }
+    { name: "Large", value: "large" },
+    { name: "Extra Large", value: "xlarge" }
   ];
   
   const getSizeInPixels = (size: PenSize): number => {
@@ -56,6 +92,7 @@ export function ToolBar() {
       case "small": return 2;
       case "medium": return 4;
       case "large": return 8;
+      case "xlarge": return 12;
     }
   };
 
@@ -63,7 +100,7 @@ export function ToolBar() {
     <div className="flex items-center space-x-2 bg-card p-2 rounded-lg shadow-sm border">
       {/* Tool Buttons */}
       <div className="flex space-x-1 pr-2 border-r">
-        {(Object.keys(toolIcons) as Tool[]).map(tool => (
+        {displayedTools.map(tool => (
           <Button
             key={tool}
             variant={activeTool === tool ? "default" : "ghost"}
@@ -78,7 +115,8 @@ export function ToolBar() {
       </div>
       
       {/* Colors */}
-      {(activeTool === "pen" || activeTool === "highlighter") && (
+      {(activeTool === "pen" || activeTool === "highlighter" || activeTool === "marker" || 
+       activeTool === "pencil" || activeTool === "brush" || activeTool === "shape") && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
@@ -94,7 +132,7 @@ export function ToolBar() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            <div className="grid grid-cols-4 gap-1 p-1">
+            <div className="grid grid-cols-5 gap-1 p-1">
               {colorOptions.map(color => (
                 <div
                   key={color.value}
@@ -111,8 +149,15 @@ export function ToolBar() {
         </DropdownMenu>
       )}
       
+      {/* Opacity Selector */}
+      {(activeTool === "pen" || activeTool === "highlighter" || activeTool === "marker" || 
+       activeTool === "pencil" || activeTool === "brush") && (
+        <OpacitySelector />
+      )}
+      
       {/* Pen Size */}
-      {(activeTool === "pen" || activeTool === "highlighter" || activeTool === "eraser") && (
+      {(activeTool === "pen" || activeTool === "highlighter" || activeTool === "eraser" || 
+       activeTool === "marker" || activeTool === "pencil" || activeTool === "brush") && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
@@ -150,6 +195,14 @@ export function ToolBar() {
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+      
+      {/* Shape Selector */}
+      {activeTool === "shape" && <ShapeSelector />}
+      
+      <Separator orientation="vertical" className="h-8" />
+      
+      {/* Undo/Redo */}
+      <UndoRedoButtons />
     </div>
   );
 }
