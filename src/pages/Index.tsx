@@ -2,10 +2,10 @@
 import { NoteList } from "@/components/Dashboard/NoteList";
 import { Sidebar } from "@/components/Dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useNoteStore } from "@/lib/store";
 import { NoteCategory } from "@/types";
-import { PenLine, Plus } from "lucide-react";
+import { Menu, PenLine, Plus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 const Index = () => {
@@ -30,7 +30,12 @@ const Index = () => {
         <Sidebar />
         <main className="flex-1 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">{pageTitle}</h1>
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="md:hidden">
+                <Menu className="h-5 w-5" />
+              </SidebarTrigger>
+              <h1 className="text-2xl font-bold">{pageTitle}</h1>
+            </div>
             <Button onClick={handleCreateNote} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               <span>New Note</span>
