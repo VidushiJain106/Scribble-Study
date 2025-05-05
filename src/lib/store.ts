@@ -69,7 +69,7 @@ export const useNoteStore = create<NoteState>((set) => ({
   isDrawing: false,
   currentPaths: [],
 
-  createNote: (category = 'uncategorized', color = 'purple') => {
+  createNote: (category = 'uncategorized' as NoteCategory, color = 'purple' as NoteColor) => {
     const id = uuidv4();
     const newNote: Note = {
       id,

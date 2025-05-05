@@ -11,7 +11,7 @@ import {
   SidebarTrigger
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { Note as NoteIcon, FolderOpen, PenLine, Image, FileText, Star, LayoutGrid } from "lucide-react";
+import { FileText, FolderOpen, PenLine, Image, Star, LayoutGrid } from "lucide-react";
 import { useNoteStore } from "@/lib/store";
 import { useNavigate } from "react-router-dom";
 
@@ -40,7 +40,7 @@ export function Sidebar() {
             className="w-full flex items-center gap-2"
             onClick={handleCreateNote}
           >
-            <NoteIcon className="h-4 w-4" />
+            <FileText className="h-4 w-4" />
             <span>New Note</span>
           </Button>
         </div>
