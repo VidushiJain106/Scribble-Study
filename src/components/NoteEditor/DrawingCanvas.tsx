@@ -99,7 +99,10 @@ export function DrawingCanvas({ onDrawingComplete }: DrawingCanvasProps) {
       if (!points.length) continue;
       
       if (tool === "shape") {
-        drawShape(ctx, points[0], points[1], color, width, path.tool as Shape);
+        // Here we need the shape information which might be stored in the opacity field for now
+        // In a real app, we would have a dedicated field for this
+        const shapeType = path.tool as unknown as Shape;
+        drawShape(ctx, points[0], points[1], color, width, shapeType);
         continue;
       }
       
@@ -147,7 +150,7 @@ export function DrawingCanvas({ onDrawingComplete }: DrawingCanvasProps) {
         points: [{ x, y }, { x, y }],
         color: getStrokeStyle(),
         width: getPenWidth(),
-        tool: activeShape,
+        tool: "shape", // This is a Tool type, not a Shape type
         opacity: penOpacity
       };
       

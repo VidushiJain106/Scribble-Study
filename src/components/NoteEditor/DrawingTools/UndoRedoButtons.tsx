@@ -25,7 +25,7 @@ export function UndoRedoButtons() {
         size="icon"
         className="h-8 w-8"
         onClick={redoDrawing}
-        disabled={true} // For now, since we don't have redo functionality yet
+        disabled={true} // Still disabled until we implement full redo functionality
         aria-label="Redo"
       >
         <Redo2 className="h-4 w-4" />

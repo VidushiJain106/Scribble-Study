@@ -1,7 +1,7 @@
 
 import { useNoteStore } from "@/lib/store";
 import { Shape } from "@/types";
-import { Square, Circle, Line, ArrowRight } from "lucide-react";
+import { Square, Circle, Minus, ArrowRight } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,7 @@ export function ShapeSelector() {
   const shapes: { label: string; value: Shape; icon: React.ReactNode }[] = [
     { label: "Rectangle", value: "rectangle", icon: <Square className="h-4 w-4" /> },
     { label: "Circle", value: "circle", icon: <Circle className="h-4 w-4" /> },
-    { label: "Line", value: "line", icon: <Line className="h-4 w-4" /> },
+    { label: "Line", value: "line", icon: <Minus className="h-4 w-4" /> },
     { label: "Arrow", value: "arrow", icon: <ArrowRight className="h-4 w-4" /> },
   ];
   

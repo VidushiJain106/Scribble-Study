@@ -49,7 +49,7 @@ export interface DrawPath {
   color: string;
   width: number;
   opacity?: number;
-  tool?: Tool;
+  tool?: Tool | string; // Changed to allow string for shape types
 }
 
 export interface Point {
