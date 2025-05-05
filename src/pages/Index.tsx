@@ -54,7 +54,7 @@ const Index = () => {
             </div>
           )}
           
-          <NoteList category={category} />
+          <NoteList category={category as NoteCategory | undefined} />
         </main>
       </div>
     </SidebarProvider>
