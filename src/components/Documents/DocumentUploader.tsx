@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Upload, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { Document } from "@/types";
+import { Document, DocumentType, NoteCategory } from "@/types";
 import { DocumentQuestionnaire } from "./DocumentQuestionnaire";
 
 export function DocumentUploader() {

@@ -94,11 +94,13 @@ export function DocumentQuestionnaire({ documentId, onComplete, completed }: Doc
                     {item.name}
                   </SelectItem>
                 ))}
-                {item => item.subCategories && item.subCategories.map(subCat => (
-                  <SelectItem key={`${item.name}-${subCat}`} value={subCat}>
-                    {item.name} / {subCat}
-                  </SelectItem>
-                ))}
+                {categoryItems.filter(item => item.subCategories).map(item => 
+                  item.subCategories?.map(subCat => (
+                    <SelectItem key={`${item.name}-${subCat}`} value={subCat}>
+                      {item.name} / {subCat}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             <Button 
