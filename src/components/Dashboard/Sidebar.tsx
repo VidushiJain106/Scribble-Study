@@ -1,22 +1,27 @@
+
 import { Button } from "@/components/ui/button";
-import { Sidebar as SidebarComponent, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from "@/components/ui/sidebar";
+import { Sidebar as SidebarComponent, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { FileText, FolderOpen, PenLine, Image, Star, LayoutGrid, FolderPlus } from "lucide-react";
+import { FileText, FolderOpen, PenLine, Image, Star, LayoutGrid, FolderPlus, ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { useNoteStore } from "@/lib/store";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function Sidebar() {
   const createNote = useNoteStore(state => state.createNote);
   const createCategory = useNoteStore(state => state.createCategory);
   const categories = useNoteStore(state => state.categories);
+  const categoryItems = useNoteStore(state => state.categoryItems);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [newCategoryOpen, setNewCategoryOpen] = useState(false);
   const [newCategory, setNewCategory] = useState("");
+  const [parentCategory, setParentCategory] = useState<string | undefined>(undefined);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
   const handleCreateNote = () => {
     const newNoteId = createNote();
@@ -25,15 +30,28 @@ export function Sidebar() {
 
   const handleCreateCategory = () => {
     if (newCategory.trim()) {
-      createCategory(newCategory.trim());
+      createCategory(newCategory.trim(), parentCategory);
       setNewCategory("");
+      setParentCategory(undefined);
       setNewCategoryOpen(false);
       toast({
         title: "Category created",
-        description: `New category "${newCategory}" has been created`
+        description: parentCategory 
+          ? `New subcategory "${newCategory}" has been created under "${parentCategory}"`
+          : `New category "${newCategory}" has been created`
       });
     }
   };
+
+  const toggleCategoryExpanded = (category: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
+  // Get top-level categories (those without parents)
+  const topLevelCategories = categoryItems.filter(item => !item.parent);
 
   return <SidebarComponent>
       <SidebarHeader className="flex justify-between items-center p-4">
@@ -99,17 +117,59 @@ export function Sidebar() {
         </div>
         
         <SidebarMenu>
-          {categories && categories.map((category) => (
-            <SidebarMenuItem key={category}>
-              <SidebarMenuButton asChild>
-                <a href={`/category/${category.toLowerCase()}`} className="flex items-center gap-2">
-                  <FolderOpen className="h-5 w-5 text-note-purple" />
-                  <span>{category}</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-          {!categories && (
+          {topLevelCategories.length > 0 ? (
+            topLevelCategories.map((categoryItem) => (
+              <SidebarMenuItem key={categoryItem.name}>
+                <SidebarMenuButton 
+                  asChild 
+                  className="justify-between"
+                  onClick={() => categoryItem.subCategories?.length && toggleCategoryExpanded(categoryItem.name)}
+                >
+                  <a href={`/category/${categoryItem.name.toLowerCase()}`} className="flex items-center gap-2 w-full">
+                    <div className="flex items-center gap-2">
+                      <FolderOpen className="h-5 w-5 text-note-purple" />
+                      <span>{categoryItem.name}</span>
+                    </div>
+                    {categoryItem.subCategories?.length ? (
+                      expandedCategories[categoryItem.name] ? (
+                        <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 flex-shrink-0" />
+                      )
+                    ) : null}
+                  </a>
+                </SidebarMenuButton>
+                
+                {categoryItem.subCategories?.length && expandedCategories[categoryItem.name] && (
+                  <SidebarMenuSub>
+                    {categoryItem.subCategories.map(subCat => {
+                      return (
+                        <SidebarMenuSubItem key={subCat}>
+                          <SidebarMenuSubButton asChild>
+                            <a href={`/category/${subCat.toLowerCase()}`}>
+                              {subCat}
+                            </a>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton 
+                        onClick={() => {
+                          setNewCategoryOpen(true);
+                          setParentCategory(categoryItem.name);
+                        }}
+                        className="text-muted-foreground hover:text-foreground flex items-center gap-1"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span>Add subcategory</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
+            ))
+          ) : (
             <>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
@@ -158,9 +218,11 @@ export function Sidebar() {
       <Dialog open={newCategoryOpen} onOpenChange={setNewCategoryOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Create New Category</DialogTitle>
+            <DialogTitle>
+              {parentCategory ? `Create New Subcategory in ${parentCategory}` : "Create New Category"}
+            </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-4">
             <Input
               placeholder="Category name"
               value={newCategory}
@@ -169,9 +231,34 @@ export function Sidebar() {
                 if (e.key === 'Enter') handleCreateCategory();
               }}
             />
+            
+            {!parentCategory && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Parent Category (Optional)
+                </label>
+                <Select value={parentCategory} onValueChange={setParentCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="None (Top-level category)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={undefined}>None (Top-level category)</SelectItem>
+                    {topLevelCategories.map(cat => (
+                      <SelectItem key={cat.name} value={cat.name}>{cat.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setNewCategoryOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => {
+              setNewCategoryOpen(false);
+              setNewCategory("");
+              setParentCategory(undefined);
+            }}>
+              Cancel
+            </Button>
             <Button onClick={handleCreateCategory}>Create</Button>
           </DialogFooter>
         </DialogContent>

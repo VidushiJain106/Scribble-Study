@@ -1,3 +1,4 @@
+
 export type NoteCategory = 
   | "personal"
   | "work"
@@ -6,6 +7,12 @@ export type NoteCategory =
   | "tasks"
   | "uncategorized"
   | string; // Adding string to allow custom categories;
+
+export interface CategoryItem {
+  name: string;
+  parent?: string;
+  subCategories?: string[];
+}
 
 export interface Note {
   id: string;

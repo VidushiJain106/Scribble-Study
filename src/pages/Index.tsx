@@ -24,6 +24,7 @@ const FloatingSidebarTrigger = () => {
 
 const Index = () => {
   const createNote = useNoteStore(state => state.createNote);
+  const categoryItems = useNoteStore(state => state.categoryItems);
   const navigate = useNavigate();
   
   const { category } = useParams<{ category?: string }>();
@@ -36,6 +37,12 @@ const Index = () => {
   let pageTitle = "All Notes";
   if (category) {
     pageTitle = `${category.charAt(0).toUpperCase() + category.slice(1)} Notes`;
+    
+    // Check if this is a subcategory and show the parent in the title
+    const categoryItem = categoryItems.find(item => item.name.toLowerCase() === category.toLowerCase());
+    if (categoryItem?.parent) {
+      pageTitle = `${categoryItem.name} Notes (${categoryItem.parent})`;
+    }
   }
 
   return (

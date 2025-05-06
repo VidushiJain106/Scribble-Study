@@ -9,11 +9,31 @@ import { useNavigate } from "react-router-dom";
 export function NoteList({ category }: { category?: string }) {
   const notes = useNoteStore(state => state.notes);
   const createNote = useNoteStore(state => state.createNote);
+  const categoryItems = useNoteStore(state => state.categoryItems);
   const navigate = useNavigate();
   
-  // Filter notes by category if provided
+  // Get all subcategories for a category
+  const getAllSubcategories = (categoryName: string): string[] => {
+    const categoryItem = categoryItems.find(item => item.name === categoryName);
+    if (!categoryItem || !categoryItem.subCategories) return [];
+    
+    const subCategories: string[] = [...categoryItem.subCategories];
+    
+    // Add nested subcategories recursively
+    categoryItem.subCategories.forEach(subCat => {
+      const nestedSubs = getAllSubcategories(subCat);
+      subCategories.push(...nestedSubs);
+    });
+    
+    return subCategories;
+  };
+  
+  // Filter notes by category and its subcategories if provided
   const filteredNotes = category 
-    ? notes.filter(note => note.category === category) 
+    ? notes.filter(note => {
+        const categories = [category, ...getAllSubcategories(category)];
+        return categories.includes(note.category);
+      })
     : notes;
   
   const handleCreateNote = () => {
