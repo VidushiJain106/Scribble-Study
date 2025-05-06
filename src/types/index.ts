@@ -1,11 +1,11 @@
-
 export type NoteCategory = 
   | "personal"
   | "work"
   | "study"
   | "ideas"
   | "tasks"
-  | "uncategorized";
+  | "uncategorized"
+  | string; // Adding string to allow custom categories;
 
 export interface Note {
   id: string;

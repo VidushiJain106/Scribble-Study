@@ -12,6 +12,7 @@ interface NoteState {
   isDrawing: boolean;
   currentPaths: DrawPath[];
   activeShape: Shape;
+  categories: string[];
   
   // Actions
   createNote: (category?: NoteCategory, color?: NoteColor) => string;
@@ -29,6 +30,8 @@ interface NoteState {
   removeAttachmentFromNote: (noteId: string, attachmentId: string) => void;
   undoDrawing: () => void;
   redoDrawing: () => void;
+  createCategory: (category: string) => void;
+  deleteCategory: (category: string) => void;
 }
 
 export const useNoteStore = create<NoteState>((set) => ({
@@ -67,6 +70,7 @@ export const useNoteStore = create<NoteState>((set) => ({
       hasDrawings: false,
     }
   ],
+  categories: ['Math', 'Physics', 'Chemistry', 'English'],
   activeNoteId: null,
   activeTool: 'pen',
   penColor: '#9b87f5',
@@ -226,5 +230,26 @@ export const useNoteStore = create<NoteState>((set) => ({
   redoDrawing: () => {
     // This would need to store redoable paths, but for simplicity we're just adding a stub
     return;
+  },
+  
+  createCategory: (category: string) => {
+    set(state => {
+      // Check if category already exists (case insensitive)
+      const categoryExists = state.categories.some(
+        cat => cat.toLowerCase() === category.toLowerCase()
+      );
+      
+      if (categoryExists) return state;
+      
+      return {
+        categories: [...state.categories, category]
+      };
+    });
+  },
+  
+  deleteCategory: (category: string) => {
+    set(state => ({
+      categories: state.categories.filter(cat => cat !== category)
+    }));
   }
 }));
