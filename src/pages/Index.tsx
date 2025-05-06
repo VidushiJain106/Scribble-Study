@@ -2,11 +2,25 @@
 import { NoteList } from "@/components/Dashboard/NoteList";
 import { Sidebar } from "@/components/Dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { useNoteStore } from "@/lib/store";
 import { NoteCategory } from "@/types";
 import { Menu, PenLine, Plus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+
+// Create a component for the floating trigger that will be conditionally rendered
+const FloatingSidebarTrigger = () => {
+  const { open } = useSidebar();
+  
+  // Don't render the trigger if the sidebar is open
+  if (open) return null;
+  
+  return (
+    <SidebarTrigger className="md:hidden">
+      <Menu className="h-5 w-5" />
+    </SidebarTrigger>
+  );
+};
 
 const Index = () => {
   const createNote = useNoteStore(state => state.createNote);
@@ -31,9 +45,7 @@ const Index = () => {
         <main className="flex-1 p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <SidebarTrigger className="md:hidden">
-                <Menu className="h-5 w-5" />
-              </SidebarTrigger>
+              <FloatingSidebarTrigger />
               <h1 className="text-2xl font-bold">{pageTitle}</h1>
             </div>
             <Button onClick={handleCreateNote} className="flex items-center gap-2">

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Sidebar as SidebarComponent, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -42,15 +41,15 @@ export function Sidebar() {
           <PenLine className="h-6 w-6 text-primary" />
           <h1 className="text-xl font-semibold">ScribbleSnap</h1>
         </div>
-        <SidebarTrigger />
       </SidebarHeader>
       
       <SidebarContent className="px-2">
-        <div className="my-4">
-          <Button className="w-full flex items-center gap-2" onClick={handleCreateNote}>
+        <div className="my-4 flex gap-2">
+          <Button className="flex-1 flex items-center gap-2" onClick={handleCreateNote}>
             <FileText className="h-4 w-4" />
             <span>New Note</span>
           </Button>
+          <SidebarTrigger className="h-10" />
         </div>
         
         <SidebarMenu>
