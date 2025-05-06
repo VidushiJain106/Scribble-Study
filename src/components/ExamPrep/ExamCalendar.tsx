@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -279,7 +279,7 @@ export function ExamCalendar() {
           </div>
         ) : (
           <div className="relative py-6 overflow-hidden">
-            <ScrollArea className="w-full h-[180px]" orientation="horizontal">
+            <ScrollArea className="w-full h-[180px]">
               <div 
                 className="relative" 
                 style={{ 
