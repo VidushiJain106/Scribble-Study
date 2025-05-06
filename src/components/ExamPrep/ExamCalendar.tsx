@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, addDays, differenceInDays, addWeeks } from "date-fns";
+import { format, addDays, differenceInDays, addWeeks, isBefore, isAfter } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GraduationCap, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,8 @@ type Exam = {
   studyStartDate: Date;
 };
 
+type TimeRange = "30" | "60" | "90" | "all";
+
 export function ExamCalendar() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [newExamOpen, setNewExamOpen] = useState(false);
@@ -27,6 +29,7 @@ export function ExamCalendar() {
   const [examTitle, setExamTitle] = useState("");
   const [examCategory, setExamCategory] = useState("");
   const [studyLeadTime, setStudyLeadTime] = useState("2");
+  const [timeRange, setTimeRange] = useState<TimeRange>("all");
   const { toast } = useToast();
 
   const addExam = () => {
@@ -62,8 +65,17 @@ export function ExamCalendar() {
     });
   };
 
+  // Filter exams based on selected time range
+  const filteredExams = exams.filter(exam => {
+    if (timeRange === "all") return true;
+    
+    const today = new Date();
+    const rangeEndDate = addDays(today, parseInt(timeRange));
+    return isAfter(exam.date, today) && isBefore(exam.date, rangeEndDate);
+  });
+
   // Sort exams by date
-  const sortedExams = [...exams].sort((a, b) => a.date.getTime() - b.date.getTime());
+  const sortedExams = [...filteredExams].sort((a, b) => a.date.getTime() - b.date.getTime());
 
   return (
     <Card>
@@ -73,92 +85,106 @@ export function ExamCalendar() {
             <GraduationCap className="h-5 w-5 text-primary" />
             Exam Timeline
           </CardTitle>
-          <Dialog open={newExamOpen} onOpenChange={setNewExamOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="flex items-center gap-1">
-                <Plus className="h-4 w-4" />
-                Add Exam
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Schedule New Exam</DialogTitle>
-              </DialogHeader>
-              
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="exam-title">Exam Title</Label>
-                  <Input 
-                    id="exam-title"
-                    placeholder="Midterm Algebra" 
-                    value={examTitle}
-                    onChange={(e) => setExamTitle(e.target.value)}
-                  />
+          <div className="flex gap-2">
+            <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="Time Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30">30 Days</SelectItem>
+                <SelectItem value="60">60 Days</SelectItem>
+                <SelectItem value="90">90 Days</SelectItem>
+                <SelectItem value="all">All Exams</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Dialog open={newExamOpen} onOpenChange={setNewExamOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="flex items-center gap-1">
+                  <Plus className="h-4 w-4" />
+                  Add Exam
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Schedule New Exam</DialogTitle>
+                </DialogHeader>
+                
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="exam-title">Exam Title</Label>
+                    <Input 
+                      id="exam-title"
+                      placeholder="Midterm Algebra" 
+                      value={examTitle}
+                      onChange={(e) => setExamTitle(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="exam-category">Subject</Label>
+                    <Select value={examCategory} onValueChange={setExamCategory}>
+                      <SelectTrigger id="exam-category">
+                        <SelectValue placeholder="Select subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="math">Math</SelectItem>
+                        <SelectItem value="physics">Physics</SelectItem>
+                        <SelectItem value="chemistry">Chemistry</SelectItem>
+                        <SelectItem value="english">English</SelectItem>
+                        <SelectItem value="history">History</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="exam-date">Exam Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="exam-date"
+                          variant="outline"
+                          className="justify-start text-left font-normal"
+                        >
+                          {selectedDate ? format(selectedDate, "PPP") : "Select date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="study-lead-time">Study Lead Time (weeks)</Label>
+                    <Select value={studyLeadTime} onValueChange={setStudyLeadTime}>
+                      <SelectTrigger id="study-lead-time">
+                        <SelectValue placeholder="Select weeks before exam" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 week</SelectItem>
+                        <SelectItem value="2">2 weeks</SelectItem>
+                        <SelectItem value="3">3 weeks</SelectItem>
+                        <SelectItem value="4">4 weeks</SelectItem>
+                        <SelectItem value="6">6 weeks</SelectItem>
+                        <SelectItem value="8">8 weeks</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 
-                <div className="grid gap-2">
-                  <Label htmlFor="exam-category">Subject</Label>
-                  <Select value={examCategory} onValueChange={setExamCategory}>
-                    <SelectTrigger id="exam-category">
-                      <SelectValue placeholder="Select subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="math">Math</SelectItem>
-                      <SelectItem value="physics">Physics</SelectItem>
-                      <SelectItem value="chemistry">Chemistry</SelectItem>
-                      <SelectItem value="english">English</SelectItem>
-                      <SelectItem value="history">History</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="exam-date">Exam Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        id="exam-date"
-                        variant="outline"
-                        className="justify-start text-left font-normal"
-                      >
-                        {selectedDate ? format(selectedDate, "PPP") : "Select date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="study-lead-time">Study Lead Time (weeks)</Label>
-                  <Select value={studyLeadTime} onValueChange={setStudyLeadTime}>
-                    <SelectTrigger id="study-lead-time">
-                      <SelectValue placeholder="Select weeks before exam" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 week</SelectItem>
-                      <SelectItem value="2">2 weeks</SelectItem>
-                      <SelectItem value="3">3 weeks</SelectItem>
-                      <SelectItem value="4">4 weeks</SelectItem>
-                      <SelectItem value="6">6 weeks</SelectItem>
-                      <SelectItem value="8">8 weeks</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button onClick={addExam}>Add Exam</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button onClick={addExam}>Add Exam</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </CardHeader>
       
@@ -170,55 +196,120 @@ export function ExamCalendar() {
             <p className="text-sm">Click "Add Exam" to schedule your first exam.</p>
           </div>
         ) : (
-          <div className="relative py-4">
-            {/* Horizontal timeline line */}
-            <div className="absolute left-0 right-0 h-0.5 bg-border top-24"></div>
-            
-            {/* Exams on horizontal timeline */}
-            <div className="flex overflow-x-auto pb-8 pt-2 relative">
-              {sortedExams.map((exam, index) => {
-                const daysUntilExam = differenceInDays(exam.date, new Date());
-                const studyPeriodDays = differenceInDays(exam.date, exam.studyStartDate);
-                
-                return (
-                  <div 
-                    key={exam.id} 
-                    className="flex-none relative mx-4 first:ml-0 last:mr-0"
-                    style={{ width: `${Math.max(studyPeriodDays * 2 + 50, 150)}px` }}
-                  >
-                    {/* Timeline dot */}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 top-24 mt-[-8px] w-4 h-4 rounded-full bg-primary border-4 border-background z-10"></div>
+          <div className="relative py-6">
+            {/* Timeline container */}
+            <div className="mt-6 mb-10">
+              {/* Main horizontal timeline line */}
+              <div className="h-2 bg-primary/20 relative rounded-full">
+                {/* Current date marker */}
+                <div 
+                  className="absolute top-0 bottom-0 w-1 bg-primary" 
+                  style={{ left: '0%' }}
+                ></div>
+              </div>
+              
+              {/* Timeline items */}
+              <div className="relative mt-6">
+                <div className="flex flex-wrap gap-8 pt-4">
+                  {sortedExams.map((exam, index) => {
+                    const daysUntilExam = differenceInDays(exam.date, new Date());
+                    const totalDays = sortedExams.length > 0 ? 
+                      differenceInDays(
+                        sortedExams[sortedExams.length - 1].date, 
+                        new Date()
+                      ) : 90;
                     
-                    {/* Study period indicator */}
-                    <div 
-                      className="absolute h-3 rounded-full bg-primary/20"
-                      style={{ 
-                        width: `${Math.max(studyPeriodDays * 2, 20)}px`,
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        top: '23px'
-                      }}
-                    ></div>
+                    // Calculate position percentage (minimum 5% to ensure visibility)
+                    const positionPercent = Math.max(
+                      5, 
+                      Math.min(95, (daysUntilExam / Math.max(totalDays, 1)) * 100)
+                    );
                     
-                    {/* Exam information */}
-                    <div className="flex flex-col items-center mb-10">
-                      <h3 className="text-lg font-medium">{exam.title}</h3>
-                      <span className="px-2 py-0.5 text-xs rounded-md bg-primary/10 text-primary">{exam.category}</span>
-                    </div>
+                    const colorClasses = [
+                      "bg-blue-500", "bg-green-500", "bg-yellow-500", 
+                      "bg-orange-500", "bg-red-500", "bg-purple-500", "bg-pink-500"
+                    ];
+                    const colorClass = colorClasses[index % colorClasses.length];
                     
-                    <div className="absolute top-28 left-1/2 transform -translate-x-1/2 text-center">
-                      <div className="text-sm">
-                        <div className="font-medium">{format(exam.date, "MMM d, yyyy")}</div>
-                        {daysUntilExam > 0 && <div className="text-xs text-muted-foreground">{daysUntilExam} days left</div>}
+                    return (
+                      <div 
+                        key={exam.id} 
+                        className="flex-1 min-w-[220px] max-w-[300px] animate-fade-in"
+                        style={{ 
+                          animationDelay: `${index * 100}ms`
+                        }}
+                      >
+                        {/* Connection line to timeline */}
+                        <div 
+                          className="absolute top-[-24px] h-6 w-0.5 bg-border"
+                          style={{ left: `${positionPercent}%` }}
+                        ></div>
+                        
+                        {/* Exam marker */}
+                        <div
+                          className="absolute top-[-36px] w-5 h-5 rounded-full border-4 border-background"
+                          style={{ 
+                            left: `${positionPercent}%`,
+                            marginLeft: "-10px",
+                            background: `var(--${exam.category === "math" ? "primary" : 
+                              exam.category === "physics" ? "note-blue" :
+                              exam.category === "chemistry" ? "note-green" :
+                              exam.category === "english" ? "note-purple" :
+                              "note-orange"})`
+                          }}
+                        ></div>
+                        
+                        {/* Card with exam info */}
+                        <div className={`
+                          border rounded-lg shadow-sm bg-card p-4 
+                          ${index % 2 === 0 ? 'mt-8' : 'mt-20'}
+                        `}>
+                          <div className="mb-2">
+                            <h3 className="text-lg font-medium">{exam.title}</h3>
+                            <span className="inline-block px-2 py-0.5 text-xs rounded-md bg-primary/10 text-primary capitalize">
+                              {exam.category}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-1 text-sm">
+                            <div>
+                              <span className="font-medium">Date:</span> {format(exam.date, "MMM d, yyyy")}
+                            </div>
+                            <div>
+                              <span className="font-medium">Start studying:</span> {format(exam.studyStartDate, "MMM d")}
+                            </div>
+                            {daysUntilExam > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                {daysUntilExam} days remaining
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Progress indicator */}
+                          {daysUntilExam > 0 && (
+                            <div className="mt-2">
+                              <div className="h-1.5 bg-primary/10 rounded-full w-full">
+                                <div 
+                                  className="h-full bg-primary rounded-full"
+                                  style={{ 
+                                    width: `${Math.max(
+                                      0, 
+                                      Math.min(
+                                        100, 
+                                        100 - (daysUntilExam / differenceInDays(exam.date, exam.studyStartDate) * 100)
+                                      )
+                                    )}%` 
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="absolute bottom-0 left-0 right-0 text-xs text-muted-foreground text-center">
-                      Start: {format(exam.studyStartDate, "MMM d")}
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         )}
