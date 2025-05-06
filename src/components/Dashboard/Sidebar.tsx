@@ -42,7 +42,8 @@ export function Sidebar() {
             <SidebarMenuButton asChild>
               <a href="/starred" className="flex items-center gap-2">
                 <Star className="h-5 w-5" />
-                <span>Starred</span>
+                <span>Focus Mode
+              </span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -51,7 +52,7 @@ export function Sidebar() {
             <SidebarMenuButton asChild>
               <a href="/drawings" className="flex items-center gap-2">
                 <PenLine className="h-5 w-5" />
-                <span>Prep Time</span>
+                <span>Exam Prep</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -101,7 +102,7 @@ export function Sidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <a href="/category/ideas" className="flex items-center gap-2">
-                <FolderOpen className="h-5 w-5 text-note-yellow" />
+                <FolderOpen className="h-5 w-5 text-note-purple\n" />
                 <span>English</span>
               </a>
             </SidebarMenuButton>
