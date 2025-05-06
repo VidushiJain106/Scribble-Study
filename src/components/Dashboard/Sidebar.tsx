@@ -51,7 +51,7 @@ export function Sidebar() {
             <SidebarMenuButton asChild>
               <a href="/drawings" className="flex items-center gap-2">
                 <PenLine className="h-5 w-5" />
-                <span>With Drawings</span>
+                <span>Prep Time</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -60,7 +60,7 @@ export function Sidebar() {
             <SidebarMenuButton asChild>
               <a href="/attachments" className="flex items-center gap-2">
                 <Image className="h-5 w-5" />
-                <span>With Attachments</span>
+                <span>Upload Notes / Documents</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
