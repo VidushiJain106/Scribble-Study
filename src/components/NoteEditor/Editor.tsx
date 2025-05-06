@@ -13,6 +13,8 @@ import { useEffect, useState } from "react";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { FileUploader } from "./FileUploader";
 import { ToolBar } from "./ToolBar";
+import { FontFormatBar } from "./FontFormatBar";
+import { CSSProperties } from "react";
 
 interface EditorProps {
   noteId: string;
@@ -30,6 +32,7 @@ export function Editor({ noteId }: EditorProps) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [activeTab, setActiveTab] = useState("text");
+  const [textFormatting, setTextFormatting] = useState<CSSProperties>({});
   
   const { toast } = useToast();
   
@@ -87,6 +90,14 @@ export function Editor({ noteId }: EditorProps) {
       title: "Attachment removed",
       description: "The attachment has been removed from the note",
     });
+  };
+  
+  // Handle text formatting
+  const handleFormatChange = (formatType: string, value: any) => {
+    setTextFormatting(prev => ({
+      ...prev,
+      [formatType]: value
+    }));
   };
   
   if (!note) {
@@ -149,11 +160,13 @@ export function Editor({ noteId }: EditorProps) {
         </div>
         
         <TabsContent value="text" className="flex-1 p-4 overflow-auto">
+          <FontFormatBar onFormatChange={handleFormatChange} />
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="min-h-[200px] resize-none border-none focus-visible:ring-0 p-0"
             placeholder="Start writing your note..."
+            style={textFormatting}
           />
           
           {note.attachments && note.attachments.length > 0 && (
