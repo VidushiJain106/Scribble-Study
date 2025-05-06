@@ -1,9 +1,10 @@
+
 import { Button } from "@/components/ui/button";
 import { Sidebar as SidebarComponent, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { FileText, FolderOpen, PenLine, Image, Star, LayoutGrid, FolderPlus, ChevronDown, ChevronRight, Plus, Clock } from "lucide-react";
 import { useNoteStore } from "@/lib/store";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -72,28 +73,28 @@ export function Sidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href="/" className="flex items-center gap-2">
+              <Link to="/" className="flex items-center gap-2">
                 <LayoutGrid className="h-5 w-5" />
                 <span>All Notes</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href="/focus" className="flex items-center gap-2">
+              <Link to="/focus" className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
                 <span>Focus Mode</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href="/documents" className="flex items-center gap-2">
+              <Link to="/documents" className="flex items-center gap-2">
                 <Image className="h-5 w-5" />
                 <span>Upload Notes / Documents</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

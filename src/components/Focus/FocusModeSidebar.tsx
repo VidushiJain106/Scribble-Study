@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { FileText, PenLine, Clock, Timer, FolderOpen, LayoutGrid } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export function FocusModeSidebar() {
   const navigate = useNavigate();
@@ -32,28 +32,28 @@ export function FocusModeSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href="/" className="flex items-center gap-2">
+              <Link to="/" className="flex items-center gap-2">
                 <LayoutGrid className="h-5 w-5" />
                 <span>All Notes</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="bg-primary/10 text-primary font-medium">
-              <a href="/focus" className="flex items-center gap-2">
+              <Link to="/focus" className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
                 <span>Focus Mode</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href="/drawings" className="flex items-center gap-2">
+              <Link to="/documents" className="flex items-center gap-2">
                 <PenLine className="h-5 w-5" />
-                <span>Exam Prep</span>
-              </a>
+                <span>Upload Notes / Documents</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -65,19 +65,19 @@ export function FocusModeSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href="/focus" className="flex items-center gap-2">
+              <Link to="/focus" className="flex items-center gap-2">
                 <Timer className="h-5 w-5 text-note-purple" />
                 <span>Deep Work</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href="/focus" className="flex items-center gap-2">
+              <Link to="/focus" className="flex items-center gap-2">
                 <Timer className="h-5 w-5 text-note-blue" />
                 <span>Study Time</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
