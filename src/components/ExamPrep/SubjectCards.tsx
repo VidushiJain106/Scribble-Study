@@ -1,9 +1,14 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Book, BookOpen, FileText, Award, TestTube } from "lucide-react";
+import { Book, BookOpen, FileText, Award, TestTube, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Example subjects - in a real app, these would come from the user's categories
 const exampleSubjects = [
@@ -42,13 +47,23 @@ interface SubjectCardProps {
 
 function SubjectCard({ id, name, colorClass }: SubjectCardProps) {
   const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
   
-  const handleAction = (action: string) => {
+  const handleAction = (action: string, e: React.MouseEvent) => {
+    // Prevent default to keep the dropdown open
+    e.preventDefault();
+    e.stopPropagation();
+    
     // In a real app, these would navigate to the respective features
     console.log(`Navigate to ${action} for ${name}`);
-    // navigate(`/exam-prep/${id}/${action}`);
+    
+    // Navigate to the action page, but do this with a slight delay
+    // so the dropdown animation can complete
+    setTimeout(() => {
+      navigate(`/exam-prep/${id}/${action}`);
+    }, 300);
   };
-  
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="bg-muted/50 pb-4">
@@ -60,49 +75,105 @@ function SubjectCard({ id, name, colorClass }: SubjectCardProps) {
       
       <CardContent className="pt-6">
         <div className="grid gap-4">
-          <Button 
-            variant="outline" 
-            className="justify-start h-auto py-3"
-            onClick={() => handleAction('lesson-plan')}
-          >
-            <div className="flex items-center gap-3">
-              <BookOpen className="h-4 w-4 text-primary" />
-              <div className="font-medium">Lesson Plan</div>
-            </div>
-          </Button>
+          <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="justify-start h-auto py-3 w-full"
+              >
+                <div className="flex items-center gap-3">
+                  <BookOpen className="h-4 w-4 text-primary" />
+                  <div className="font-medium">Lesson Plan</div>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48 bg-popover" align="start">
+              <DropdownMenuItem onClick={(e) => handleAction('lesson-plan', e as React.MouseEvent)}>
+                View Lesson Plan
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => handleAction('create-plan', e as React.MouseEvent)}>
+                Create New Plan
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => handleAction('edit-plan', e as React.MouseEvent)}>
+                Edit Existing Plan
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
-          <Button 
-            variant="outline" 
-            className="justify-start h-auto py-3"
-            onClick={() => handleAction('flashcards')}
-          >
-            <div className="flex items-center gap-3">
-              <FileText className="h-4 w-4 text-primary" />
-              <div className="font-medium">Flashcards</div>
-            </div>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="justify-start h-auto py-3 w-full"
+              >
+                <div className="flex items-center gap-3">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <div className="font-medium">Flashcards</div>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48 bg-popover" align="start">
+              <DropdownMenuItem onClick={(e) => handleAction('flashcards', e as React.MouseEvent)}>
+                View Flashcards
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => handleAction('create-flashcards', e as React.MouseEvent)}>
+                Create Flashcards
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => handleAction('practice', e as React.MouseEvent)}>
+                Practice Mode
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
-          <Button 
-            variant="outline" 
-            className="justify-start h-auto py-3"
-            onClick={() => handleAction('mock-exam')}
-          >
-            <div className="flex items-center gap-3">
-              <TestTube className="h-4 w-4 text-primary" />
-              <div className="font-medium">Mock Exam</div>
-            </div>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="justify-start h-auto py-3 w-full"
+              >
+                <div className="flex items-center gap-3">
+                  <TestTube className="h-4 w-4 text-primary" />
+                  <div className="font-medium">Mock Exam</div>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48 bg-popover" align="start">
+              <DropdownMenuItem onClick={(e) => handleAction('mock-exam', e as React.MouseEvent)}>
+                Take Mock Exam
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => handleAction('create-exam', e as React.MouseEvent)}>
+                Create Mock Exam
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => handleAction('past-exams', e as React.MouseEvent)}>
+                Past Exams
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
-          <Button 
-            variant="outline" 
-            className="justify-start h-auto py-3"
-            onClick={() => handleAction('results')}
-          >
-            <div className="flex items-center gap-3">
-              <Award className="h-4 w-4 text-primary" />
-              <div className="font-medium">Results</div>
-            </div>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="justify-start h-auto py-3 w-full"
+              >
+                <div className="flex items-center gap-3">
+                  <Award className="h-4 w-4 text-primary" />
+                  <div className="font-medium">Results</div>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48 bg-popover" align="start">
+              <DropdownMenuItem onClick={(e) => handleAction('results', e as React.MouseEvent)}>
+                View Results
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => handleAction('analytics', e as React.MouseEvent)}>
+                Performance Analytics
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => handleAction('improvement', e as React.MouseEvent)}>
+                Improvement Areas
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardContent>
     </Card>
