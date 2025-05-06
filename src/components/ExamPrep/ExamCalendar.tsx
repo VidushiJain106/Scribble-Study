@@ -170,43 +170,51 @@ export function ExamCalendar() {
             <p className="text-sm">Click "Add Exam" to schedule your first exam.</p>
           </div>
         ) : (
-          <div className="relative pt-4 pb-8">
-            {/* Timeline line */}
-            <div className="absolute left-0 top-8 bottom-8 w-0.5 bg-border"></div>
+          <div className="relative py-4">
+            {/* Horizontal timeline line */}
+            <div className="absolute left-0 right-0 h-0.5 bg-border top-24"></div>
             
-            {/* Exams on timeline */}
-            <div className="space-y-8">
-              {sortedExams.map((exam) => {
+            {/* Exams on horizontal timeline */}
+            <div className="flex overflow-x-auto pb-8 pt-2 relative">
+              {sortedExams.map((exam, index) => {
                 const daysUntilExam = differenceInDays(exam.date, new Date());
                 const studyPeriodDays = differenceInDays(exam.date, exam.studyStartDate);
                 
                 return (
-                  <div key={exam.id} className="relative pl-8">
+                  <div 
+                    key={exam.id} 
+                    className="flex-none relative mx-4 first:ml-0 last:mr-0"
+                    style={{ width: `${Math.max(studyPeriodDays * 2 + 50, 150)}px` }}
+                  >
                     {/* Timeline dot */}
-                    <div className="absolute left-[-8px] top-0 w-4 h-4 rounded-full bg-primary border-4 border-background"></div>
+                    <div className="absolute left-1/2 transform -translate-x-1/2 top-24 mt-[-8px] w-4 h-4 rounded-full bg-primary border-4 border-background z-10"></div>
                     
                     {/* Study period indicator */}
                     <div 
-                      className="absolute left-[-6px] top-0 w-3 rounded-full bg-primary/20"
+                      className="absolute h-3 rounded-full bg-primary/20"
                       style={{ 
-                        height: `${Math.max(studyPeriodDays * 4, 16)}px`,
-                        top: '-4px'
+                        width: `${Math.max(studyPeriodDays * 2, 20)}px`,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        top: '23px'
                       }}
                     ></div>
                     
-                    <div className="mb-1 flex items-center">
+                    {/* Exam information */}
+                    <div className="flex flex-col items-center mb-10">
                       <h3 className="text-lg font-medium">{exam.title}</h3>
-                      <span className="ml-2 px-2 py-0.5 text-xs rounded-md bg-primary/10 text-primary">{exam.category}</span>
+                      <span className="px-2 py-0.5 text-xs rounded-md bg-primary/10 text-primary">{exam.category}</span>
                     </div>
                     
-                    <div className="text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium">Exam Date:</span> {format(exam.date, "PPP")} 
-                        {daysUntilExam > 0 && <span className="text-xs">({daysUntilExam} days left)</span>}
+                    <div className="absolute top-28 left-1/2 transform -translate-x-1/2 text-center">
+                      <div className="text-sm">
+                        <div className="font-medium">{format(exam.date, "MMM d, yyyy")}</div>
+                        {daysUntilExam > 0 && <div className="text-xs text-muted-foreground">{daysUntilExam} days left</div>}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium">Start studying:</span> {format(exam.studyStartDate, "PPP")}
-                      </div>
+                    </div>
+                    
+                    <div className="absolute bottom-0 left-0 right-0 text-xs text-muted-foreground text-center">
+                      Start: {format(exam.studyStartDate, "MMM d")}
                     </div>
                   </div>
                 );
