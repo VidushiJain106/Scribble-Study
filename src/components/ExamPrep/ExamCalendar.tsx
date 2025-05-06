@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, addDays, differenceInDays, addWeeks, isBefore, isAfter } from "date-fns";
+import { format, addDays, differenceInDays, addWeeks, isBefore, isAfter, addMonths } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GraduationCap, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,49 @@ type Exam = {
 
 type TimeRange = "30" | "60" | "90" | "all";
 
+// Generate dummy exam data
+const generateDummyExams = (): Exam[] => {
+  const today = new Date();
+  
+  return [
+    {
+      id: "1",
+      title: "Calculus Midterm",
+      date: addDays(today, 14),
+      category: "math",
+      studyStartDate: addDays(today, 0)
+    },
+    {
+      id: "2",
+      title: "Physics Final",
+      date: addDays(today, 45),
+      category: "physics",
+      studyStartDate: addDays(today, 15)
+    },
+    {
+      id: "3",
+      title: "Chemistry Lab Exam",
+      date: addDays(today, 7),
+      category: "chemistry",
+      studyStartDate: addDays(today, -7)
+    },
+    {
+      id: "4",
+      title: "English Literature Essay",
+      date: addDays(today, 30),
+      category: "english",
+      studyStartDate: addDays(today, 16)
+    },
+    {
+      id: "5",
+      title: "History Final",
+      date: addMonths(today, 2),
+      category: "history",
+      studyStartDate: addDays(today, 30)
+    },
+  ];
+};
+
 export function ExamCalendar() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [newExamOpen, setNewExamOpen] = useState(false);
@@ -31,6 +74,11 @@ export function ExamCalendar() {
   const [studyLeadTime, setStudyLeadTime] = useState("2");
   const [timeRange, setTimeRange] = useState<TimeRange>("all");
   const { toast } = useToast();
+
+  // Initialize with dummy data
+  useEffect(() => {
+    setExams(generateDummyExams());
+  }, []);
 
   const addExam = () => {
     if (!selectedDate || !examTitle || !examCategory) {
