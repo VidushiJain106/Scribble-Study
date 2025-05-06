@@ -240,16 +240,21 @@ export function Chatbot() {
           "w-80 sm:w-96 shadow-lg flex flex-col h-[450px] animate-in fade-in-0 duration-200",
           isDragging ? "cursor-grabbing opacity-90" : "opacity-100"
         )}>
-          <div 
-            className="flex items-center justify-between border-b p-3 cursor-grab"
-            onMouseDown={handleMouseDown}
-          >
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between border-b p-3 relative">
+            <div 
+              className="flex items-center gap-2 cursor-grab flex-1"
+              onMouseDown={handleMouseDown}
+            >
               <MessageSquare className="h-5 w-5 text-primary" />
               <h3 className="font-medium">Note Assistant</h3>
               <Move className="h-4 w-4 text-muted-foreground ml-2" />
             </div>
-            <Button variant="ghost" size="icon" onClick={toggleChat} className="h-8 w-8">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleChat} 
+              className="h-8 w-8 relative z-10"
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
