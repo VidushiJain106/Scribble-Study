@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotePage from "./pages/NotePage";
 import NotFound from "./pages/NotFound";
 import { Chatbot } from "./components/Chat/Chatbot";
+import FocusMode from "./pages/FocusMode";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/category/:category" element={<Index />} />
           <Route path="/note/:id" element={<NotePage />} />
+          <Route path="/focus" element={<FocusMode />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Chatbot />

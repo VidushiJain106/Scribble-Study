@@ -1,4 +1,3 @@
-
 export type NoteCategory = 
   | "personal"
   | "work"
@@ -87,6 +86,20 @@ export type Shape =
   | "circle" 
   | "line" 
   | "arrow";
+
+// Focus Mode Types
+export interface FocusMode {
+  id: string;
+  name: string;
+  icon?: string;
+  muteNotifications: boolean;
+  muteCalls: boolean;
+  blockEntertainmentApps: boolean;
+  blockAllApps: boolean;
+  duration: number; // in minutes
+  isActive: boolean;
+  color: string;
+}
 
 export type ChatMessageRole = "user" | "assistant" | "system";
 

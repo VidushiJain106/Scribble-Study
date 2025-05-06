@@ -1,8 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Sidebar as SidebarComponent, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { FileText, FolderOpen, PenLine, Image, Star, LayoutGrid, FolderPlus, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { FileText, FolderOpen, PenLine, Image, Star, LayoutGrid, FolderPlus, ChevronDown, ChevronRight, Plus, Clock } from "lucide-react";
 import { useNoteStore } from "@/lib/store";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -82,10 +81,9 @@ export function Sidebar() {
           
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href="/starred" className="flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                <span>Focus Mode
-              </span>
+              <a href="/focus" className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                <span>Focus Mode</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
