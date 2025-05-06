@@ -14,9 +14,9 @@ import {
   AlignCenter, 
   AlignRight,
   ListOrdered,
-  ListUnordered,
+  List,  // Changed from ListUnordered to List
   Heading,
-  FontSize
+  Text  // Changed from FontSize to Text
 } from "lucide-react";
 
 interface FontFormatBarProps {
@@ -84,7 +84,7 @@ export function FontFormatBar({ onFormatChange }: FontFormatBarProps) {
         <ListOrdered className="h-4 w-4" />
       </Toggle>
       <Toggle size="sm" onClick={() => onFormatChange("list", "unordered")}>
-        <ListUnordered className="h-4 w-4" />
+        <List className="h-4 w-4" />
       </Toggle>
 
       <Separator orientation="vertical" className="mx-1 h-6" />
@@ -93,7 +93,7 @@ export function FontFormatBar({ onFormatChange }: FontFormatBarProps) {
       <Popover>
         <PopoverTrigger asChild>
           <Toggle size="sm" className="gap-1">
-            <FontSize className="h-4 w-4" />
+            <Text className="h-4 w-4" />
             <span className="sr-only">Font size</span>
           </Toggle>
         </PopoverTrigger>
