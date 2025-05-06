@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -73,8 +73,7 @@ export function ExamCalendar() {
   const [examCategory, setExamCategory] = useState("");
   const [studyLeadTime, setStudyLeadTime] = useState("2");
   const { toast } = useToast();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
+  
   // Initialize with dummy data
   useEffect(() => {
     setExams(generateDummyExams());
@@ -280,7 +279,7 @@ export function ExamCalendar() {
           </div>
         ) : (
           <div className="relative py-6 overflow-hidden">
-            <ScrollArea className="w-full" ref={scrollContainerRef}>
+            <ScrollArea className="w-full h-[180px]" orientation="horizontal">
               <div 
                 className="relative" 
                 style={{ 
@@ -363,6 +362,7 @@ export function ExamCalendar() {
                   );
                 })}
               </div>
+              <ScrollBar orientation="horizontal" />
             </ScrollArea>
           </div>
         )}
