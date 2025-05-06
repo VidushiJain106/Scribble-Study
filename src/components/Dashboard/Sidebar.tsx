@@ -1,8 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Sidebar as SidebarComponent, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { FileText, FolderOpen, PenLine, Image, Star, LayoutGrid, FolderPlus, ChevronDown, ChevronRight, Plus, Clock } from "lucide-react";
+import { FileText, FolderOpen, PenLine, Image, Star, LayoutGrid, FolderPlus, ChevronDown, ChevronRight, Plus, Clock, GraduationCap } from "lucide-react";
 import { useNoteStore } from "@/lib/store";
 import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
@@ -85,6 +84,15 @@ export function Sidebar() {
               <Link to="/focus" className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
                 <span>Focus Mode</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="/exam-prep" className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5" />
+                <span>Exam Prep</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { FileText, PenLine, Clock, Timer, FolderOpen, LayoutGrid } from "lucide-react";
+import { FileText, PenLine, Clock, Timer, FolderOpen, LayoutGrid, GraduationCap } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 
 export function FocusModeSidebar() {
@@ -44,6 +44,15 @@ export function FocusModeSidebar() {
               <Link to="/focus" className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
                 <span>Focus Mode</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="/exam-prep" className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5" />
+                <span>Exam Prep</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
