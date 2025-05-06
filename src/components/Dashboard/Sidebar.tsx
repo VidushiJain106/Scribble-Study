@@ -90,16 +90,7 @@ export function Sidebar() {
           
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href="/drawings" className="flex items-center gap-2">
-                <PenLine className="h-5 w-5" />
-                <span>Exam Prep</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <a href="/attachments" className="flex items-center gap-2">
+              <a href="/documents" className="flex items-center gap-2">
                 <Image className="h-5 w-5" />
                 <span>Upload Notes / Documents</span>
               </a>

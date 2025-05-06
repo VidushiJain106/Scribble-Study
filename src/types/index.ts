@@ -1,3 +1,4 @@
+
 export type NoteCategory = 
   | "personal"
   | "work"
@@ -99,6 +100,24 @@ export interface FocusMode {
   duration: number; // in minutes
   isActive: boolean;
   color: string;
+}
+
+// Document Types
+export type DocumentType = 
+  | "handwritten"
+  | "coursework"
+  | "textbook";
+
+export interface Document {
+  id: string;
+  name: string;
+  file: File;
+  url: string;
+  uploadDate: Date;
+  type?: DocumentType;
+  category?: NoteCategory;
+  tags?: string[];
+  questionnaireDone: boolean;
 }
 
 export type ChatMessageRole = "user" | "assistant" | "system";
