@@ -1,31 +1,17 @@
-
 import { Button } from "@/components/ui/button";
-import { 
-  Sidebar as SidebarComponent, 
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarTrigger
-} from "@/components/ui/sidebar";
+import { Sidebar as SidebarComponent, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { FileText, FolderOpen, PenLine, Image, Star, LayoutGrid } from "lucide-react";
 import { useNoteStore } from "@/lib/store";
 import { useNavigate } from "react-router-dom";
-
 export function Sidebar() {
   const createNote = useNoteStore(state => state.createNote);
   const navigate = useNavigate();
-  
   const handleCreateNote = () => {
     const newNoteId = createNote();
     navigate(`/note/${newNoteId}`);
   };
-
-  return (
-    <SidebarComponent>
+  return <SidebarComponent>
       <SidebarHeader className="flex justify-between items-center p-4">
         <div className="flex items-center gap-2">
           <PenLine className="h-6 w-6 text-primary" />
@@ -36,10 +22,7 @@ export function Sidebar() {
       
       <SidebarContent className="px-2">
         <div className="my-4">
-          <Button 
-            className="w-full flex items-center gap-2"
-            onClick={handleCreateNote}
-          >
+          <Button className="w-full flex items-center gap-2" onClick={handleCreateNote}>
             <FileText className="h-4 w-4" />
             <span>New Note</span>
           </Button>
@@ -92,7 +75,7 @@ export function Sidebar() {
             <SidebarMenuButton asChild>
               <a href="/category/personal" className="flex items-center gap-2">
                 <FolderOpen className="h-5 w-5 text-note-purple" />
-                <span>Personal</span>
+                <span>Math</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -101,7 +84,7 @@ export function Sidebar() {
             <SidebarMenuButton asChild>
               <a href="/category/work" className="flex items-center gap-2">
                 <FolderOpen className="h-5 w-5 text-note-blue" />
-                <span>Work</span>
+                <span>Physics</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -110,7 +93,7 @@ export function Sidebar() {
             <SidebarMenuButton asChild>
               <a href="/category/study" className="flex items-center gap-2">
                 <FolderOpen className="h-5 w-5 text-note-green" />
-                <span>Study</span>
+                <span>Chemistry</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -119,7 +102,7 @@ export function Sidebar() {
             <SidebarMenuButton asChild>
               <a href="/category/ideas" className="flex items-center gap-2">
                 <FolderOpen className="h-5 w-5 text-note-yellow" />
-                <span>Ideas</span>
+                <span>English</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -129,6 +112,5 @@ export function Sidebar() {
       <SidebarFooter className="p-4 border-t flex justify-end">
         <ThemeToggle />
       </SidebarFooter>
-    </SidebarComponent>
-  );
+    </SidebarComponent>;
 }
