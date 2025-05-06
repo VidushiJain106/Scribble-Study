@@ -93,7 +93,7 @@ export function Sidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <a href="/category/study" className="flex items-center gap-2">
-                <FolderOpen className="h-5 w-5 text-note-green" />
+                <FolderOpen className="h-5 w-5 text-note-purple" />
                 <span>Chemistry</span>
               </a>
             </SidebarMenuButton>
