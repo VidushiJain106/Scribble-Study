@@ -67,10 +67,7 @@ function SubjectCard({ id, name, colorClass }: SubjectCardProps) {
           >
             <div className="flex items-center gap-3">
               <BookOpen className="h-4 w-4 text-primary" />
-              <div className="text-left">
-                <div className="font-medium">Lesson Plan</div>
-                <div className="text-xs text-muted-foreground">Structured learning path</div>
-              </div>
+              <div className="font-medium">Lesson Plan</div>
             </div>
           </Button>
           
@@ -81,10 +78,7 @@ function SubjectCard({ id, name, colorClass }: SubjectCardProps) {
           >
             <div className="flex items-center gap-3">
               <FileText className="h-4 w-4 text-primary" />
-              <div className="text-left">
-                <div className="font-medium">Flashcards</div>
-                <div className="text-xs text-muted-foreground">Quick knowledge testing</div>
-              </div>
+              <div className="font-medium">Flashcards</div>
             </div>
           </Button>
           
@@ -95,10 +89,7 @@ function SubjectCard({ id, name, colorClass }: SubjectCardProps) {
           >
             <div className="flex items-center gap-3">
               <TestTube className="h-4 w-4 text-primary" />
-              <div className="text-left">
-                <div className="font-medium">Mock Exam</div>
-                <div className="text-xs text-muted-foreground">Practice exam conditions</div>
-              </div>
+              <div className="font-medium">Mock Exam</div>
             </div>
           </Button>
           
@@ -109,10 +100,7 @@ function SubjectCard({ id, name, colorClass }: SubjectCardProps) {
           >
             <div className="flex items-center gap-3">
               <Award className="h-4 w-4 text-primary" />
-              <div className="text-left">
-                <div className="font-medium">Results</div>
-                <div className="text-xs text-muted-foreground">Track your progress</div>
-              </div>
+              <div className="font-medium">Results</div>
             </div>
           </Button>
         </div>
