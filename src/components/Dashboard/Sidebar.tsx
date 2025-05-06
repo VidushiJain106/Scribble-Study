@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Sidebar as SidebarComponent, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -42,7 +43,10 @@ export function Sidebar() {
     }
   };
 
-  const toggleCategoryExpanded = (category: string) => {
+  const toggleCategoryExpanded = (category: string, e: React.MouseEvent) => {
+    // Prevent default navigation
+    e.preventDefault();
+    
     setExpandedCategories(prev => ({
       ...prev,
       [category]: !prev[category]
@@ -119,11 +123,10 @@ export function Sidebar() {
             topLevelCategories.map((categoryItem) => (
               <SidebarMenuItem key={categoryItem.name}>
                 <SidebarMenuButton 
-                  asChild 
                   className="justify-between"
-                  onClick={() => categoryItem.subCategories?.length && toggleCategoryExpanded(categoryItem.name)}
+                  onClick={(e) => categoryItem.subCategories?.length && toggleCategoryExpanded(categoryItem.name, e)}
                 >
-                  <a href={`/category/${categoryItem.name.toLowerCase()}`} className="flex items-center gap-2 w-full">
+                  <div className="flex items-center gap-2 w-full">
                     <div className="flex items-center gap-2">
                       <FolderOpen className="h-5 w-5 text-note-purple" />
                       <span>{categoryItem.name}</span>
@@ -135,7 +138,7 @@ export function Sidebar() {
                         <ChevronRight className="h-4 w-4 flex-shrink-0" />
                       )
                     ) : null}
-                  </a>
+                  </div>
                 </SidebarMenuButton>
                 
                 {categoryItem.subCategories?.length && expandedCategories[categoryItem.name] && (
@@ -144,9 +147,9 @@ export function Sidebar() {
                       return (
                         <SidebarMenuSubItem key={subCat}>
                           <SidebarMenuSubButton asChild>
-                            <a href={`/category/${subCat.toLowerCase()}`}>
+                            <Link to={`/category/${subCat.toLowerCase()}`}>
                               {subCat}
-                            </a>
+                            </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       );
@@ -170,38 +173,50 @@ export function Sidebar() {
           ) : (
             <>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <a href="/category/math" className="flex items-center gap-2">
+                <SidebarMenuButton 
+                  onClick={(e) => e.preventDefault()} 
+                  className="justify-between"
+                >
+                  <div className="flex items-center gap-2">
                     <FolderOpen className="h-5 w-5 text-note-purple" />
                     <span>Math</span>
-                  </a>
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <a href="/category/physics" className="flex items-center gap-2">
+                <SidebarMenuButton 
+                  onClick={(e) => e.preventDefault()}
+                  className="justify-between"
+                >
+                  <div className="flex items-center gap-2">
                     <FolderOpen className="h-5 w-5 text-note-blue" />
                     <span>Physics</span>
-                  </a>
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <a href="/category/chemistry" className="flex items-center gap-2">
+                <SidebarMenuButton 
+                  onClick={(e) => e.preventDefault()}
+                  className="justify-between"
+                >
+                  <div className="flex items-center gap-2">
                     <FolderOpen className="h-5 w-5 text-note-purple" />
                     <span>Chemistry</span>
-                  </a>
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <a href="/category/english" className="flex items-center gap-2">
+                <SidebarMenuButton 
+                  onClick={(e) => e.preventDefault()}
+                  className="justify-between"
+                >
+                  <div className="flex items-center gap-2">
                     <FolderOpen className="h-5 w-5 text-note-purple" />
                     <span>English</span>
-                  </a>
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </>
