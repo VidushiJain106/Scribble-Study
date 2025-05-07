@@ -1,5 +1,5 @@
 
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Plus, FolderPlus, FileText, Clock, GraduationCap, PenLine } from "lucide-react";
@@ -12,6 +12,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 
 export function Sidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setOpenMobile } = useSidebar();
   const createNote = useNoteStore(state => state.createNote);
   const createCategory = useCategoryStore(state => state.createCategory);
@@ -27,7 +28,7 @@ export function Sidebar() {
   };
   
   const handleCategoryClick = (category: string) => {
-    navigate(`/?category=${category}`);
+    navigate(`/category/${category}`);
     setOpenMobile(false); // Close the sidebar on mobile when clicking a category
   };
 
@@ -36,14 +37,23 @@ export function Sidebar() {
     setOpenMobile(false); // Close the sidebar on mobile when navigating
   };
 
+  // Check if a path is active - handles both exact matches and routes with parameters
+  const isActive = (path: string) => {
+    if (path === '/') {
+      // For root path, check if we're on root or /app
+      return location.pathname === '/' || location.pathname === '/app';
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <aside className="border-r flex flex-col w-64 py-4 h-full">
       <div className="px-6">
         <Button 
           variant="ghost" 
-          className="justify-start w-full mb-4"
+          className="justify-start w-full mb-4 text-xl font-bold"
           onClick={() => {
-            navigate("/");
+            navigate("/app");
             setOpenMobile(false);
           }}
         >
@@ -73,17 +83,17 @@ export function Sidebar() {
       <div className="flex-1 px-6 overflow-y-auto">
         <h4 className="mb-2 font-semibold text-sm">Navigation</h4>
         <Button 
-          variant="ghost" 
-          className="justify-start w-full mb-2 flex items-center gap-2"
-          onClick={() => handleNavigate("/")}
+          variant={isActive('/') ? "secondary" : "ghost"}
+          className={`justify-start w-full mb-2 flex items-center gap-2 ${isActive('/') ? 'bg-primary/10 text-primary font-medium' : ''}`}
+          onClick={() => handleNavigate("/app")}
         >
           <FileText className="h-4 w-4" />
           All Notes
         </Button>
         
         <Button 
-          variant="ghost" 
-          className="justify-start w-full mb-2 flex items-center gap-2"
+          variant={isActive('/focus') ? "secondary" : "ghost"}
+          className={`justify-start w-full mb-2 flex items-center gap-2 ${isActive('/focus') ? 'bg-primary/10 text-primary font-medium' : ''}`}
           onClick={() => handleNavigate("/focus")}
         >
           <Clock className="h-4 w-4" />
@@ -91,8 +101,8 @@ export function Sidebar() {
         </Button>
         
         <Button 
-          variant="ghost" 
-          className="justify-start w-full mb-2 flex items-center gap-2"
+          variant={isActive('/exam-prep') ? "secondary" : "ghost"}
+          className={`justify-start w-full mb-2 flex items-center gap-2 ${isActive('/exam-prep') ? 'bg-primary/10 text-primary font-medium' : ''}`}
           onClick={() => handleNavigate("/exam-prep")}
         >
           <GraduationCap className="h-4 w-4" />
@@ -100,8 +110,8 @@ export function Sidebar() {
         </Button>
         
         <Button 
-          variant="ghost" 
-          className="justify-start w-full mb-2 flex items-center gap-2"
+          variant={isActive('/documents') ? "secondary" : "ghost"}
+          className={`justify-start w-full mb-2 flex items-center gap-2 ${isActive('/documents') ? 'bg-primary/10 text-primary font-medium' : ''}`}
           onClick={() => handleNavigate("/documents")}
         >
           <PenLine className="h-4 w-4" />

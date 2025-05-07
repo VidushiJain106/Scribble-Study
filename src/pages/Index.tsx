@@ -1,3 +1,4 @@
+
 import { NoteList } from "@/components/Dashboard/NoteList";
 import { Sidebar } from "@/components/Dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sid
 import { useNoteStore } from "@/lib/store";
 import { useCategoryStore } from "@/lib/categoryStore";
 import { NoteCategory } from "@/types";
-import { Menu, PenLine, Plus } from "lucide-react";
+import { FileText, Menu, PenLine, Plus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useEffect } from "react";
@@ -76,14 +77,17 @@ const Index = () => {
               <FloatingSidebarTrigger />
               <h1 className="text-2xl font-bold">{pageTitle}</h1>
             </div>
-            <Button onClick={handleCreateNote} className="flex items-center gap-2">
+            <Button 
+              onClick={handleCreateNote} 
+              className="flex items-center gap-2 bg-violet-500 hover:bg-violet-600"
+            >
               <Plus className="h-4 w-4" />
               <span>New Note</span>
             </Button>
           </div>
           
           {!category && (
-            <div className="mb-8 p-8 bg-gradient-to-r from-note-purple to-primary rounded-lg shadow-lg text-white">
+            <div className="mb-8 p-8 bg-gradient-to-r from-violet-500 to-primary rounded-lg shadow-lg text-white">
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="text-3xl font-bold mb-2">Welcome to ScribbleSnap</h2>
