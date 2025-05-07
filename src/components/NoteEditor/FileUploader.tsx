@@ -71,6 +71,7 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
         name: uploadedFile.name,
         type: uploadedFile.type.startsWith("image/") ? "image" : "pdf",
         url,
+        size: uploadedFile.size, // Add the file size property
         thumbnailUrl: previewUrl || undefined
       });
       
