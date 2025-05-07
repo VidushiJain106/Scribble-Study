@@ -86,21 +86,39 @@ const ExplanationPage = () => {
   const handleCompleteQuiz = () => {
     setShowQuiz(false);
   };
+
+  const handleRetry = async () => {
+    toast({
+      title: "Retrying",
+      description: "Attempting to generate explanation again...",
+    });
+    
+    try {
+      await fetchExplanation();
+    } catch (err) {
+      console.error("Retry failed:", err);
+      toast({
+        title: "Retry Failed",
+        description: "Still unable to generate explanation. Please try again later.",
+        variant: "destructive"
+      });
+    }
+  };
   
   if (loading) {
     return <ExplanationLoading isGeneratingQuiz={showQuiz && !quiz} />;
-  }
-  
-  if (error) {
-    return <ExplanationError errorType="generic" noteId={noteId} />;
   }
   
   if (!note) {
     return <ExplanationError errorType="not-found" />;
   }
   
+  if (error) {
+    return <ExplanationError errorType="generic" noteId={noteId} onRetry={handleRetry} />;
+  }
+  
   if (!explanation) {
-    return <ExplanationError errorType="not-ready" noteId={noteId} />;
+    return <ExplanationError errorType="not-ready" noteId={noteId} onRetry={handleRetry} />;
   }
   
   return showQuiz && quiz ? (

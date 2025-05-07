@@ -37,7 +37,7 @@ serve(async (req) => {
       .from('explanations')
       .select('*')
       .eq('note_id', noteId)
-      .single();
+      .maybeSingle();
 
     if (existingExplanation) {
       return new Response(
@@ -68,11 +68,13 @@ serve(async (req) => {
             role: "system", 
             content: `You are an educational assistant that creates detailed explanations from student notes.
             Create a comprehensive explanation based on the topic and content provided.
-            Format your response as valid JSON with the fields:
+            Format your response as JSON with the fields:
             - title: A descriptive title for the explanation
             - sections: An array of sections, each with a 'title' and 'content' field
             - summary: A concise summary of the main points
-            - furtherResources: (optional) An array of suggested resources for further reading`
+            - furtherResources: (optional) An array of suggested resources for further reading
+            
+            IMPORTANT: Return ONLY the JSON object without any markdown formatting, code blocks, or backticks.`
           },
           {
             role: "user", 
@@ -100,16 +102,35 @@ serve(async (req) => {
 
     // Parse the AI response
     const responseData = await openRouterResponse.json();
-    const analysisText = responseData.choices[0].message?.content || '{}';
+    let analysisText = responseData.choices[0].message?.content || '{}';
     
     console.log("Raw explanation text:", analysisText);
+    
+    // Clean up the response text to handle possible markdown formatting
+    // Remove any markdown code block indicators or backticks
+    analysisText = analysisText.replace(/```json\s*/g, '').replace(/```\s*$/g, '').replace(/^```\s*/g, '').trim();
     
     let explanation;
     try {
       explanation = JSON.parse(analysisText);
     } catch (parseError) {
       console.error("Error parsing AI response:", parseError, "Response was:", analysisText);
-      throw new Error("Failed to parse AI response");
+      
+      // Try additional cleanup if first parse fails
+      try {
+        // Remove any remaining non-JSON characters
+        const jsonStart = analysisText.indexOf('{');
+        const jsonEnd = analysisText.lastIndexOf('}') + 1;
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          const cleanerJson = analysisText.substring(jsonStart, jsonEnd);
+          explanation = JSON.parse(cleanerJson);
+        } else {
+          throw new Error("Could not locate valid JSON in response");
+        }
+      } catch (secondError) {
+        console.error("Failed second parse attempt:", secondError);
+        throw new Error("Failed to parse AI response");
+      }
     }
 
     // Store explanation in database
