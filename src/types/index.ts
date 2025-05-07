@@ -26,6 +26,7 @@ export interface Note {
   hasDrawings: boolean;
   attachments?: Attachment[];
   drawings?: Drawing[];
+  analysis?: NoteAnalysis;
 }
 
 export type NoteColor = 
@@ -140,4 +141,86 @@ export interface ChatState {
   markAsRead: () => void;
   setLoading: (loading: boolean) => void;
   analyzeNote: (note: Note) => void;
+}
+
+// New types for LLM-powered features
+export interface NoteAnalysis {
+  id?: string;
+  noteId: string;
+  mainTopic: string;
+  concepts: string[];
+  readyForExplanation: boolean;
+  createdAt: Date;
+}
+
+export interface Explanation {
+  id?: string;
+  noteId: string;
+  topic: string;
+  title: string;
+  content: ExplanationContent;
+  createdAt: Date;
+}
+
+export interface ExplanationContent {
+  title: string;
+  sections: ExplanationSection[];
+  summary: string;
+  furtherResources?: string[];
+}
+
+export interface ExplanationSection {
+  title: string;
+  content: string;
+}
+
+export interface Quiz {
+  id?: string;
+  noteId: string;
+  topic: string;
+  introduction: string;
+  questions: QuizQuestion[];
+  createdAt: Date;
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  difficulty: "easy" | "moderate" | "hard";
+  hint?: string;
+  explanation?: string;
+}
+
+export interface QuizAnswer {
+  id?: string;
+  questionId: string;
+  answer: string;
+  isCorrect?: boolean;
+  feedback?: string;
+  createdAt?: Date;
+}
+
+export type Exam = {
+  id: string;
+  title: string;
+  date: Date;
+  category: string;
+  studyStartDate: Date;
+};
+
+export function getCategoryColor(category: string): string {
+  switch (category) {
+    case "math": 
+      return "bg-blue-500";
+    case "physics": 
+      return "bg-orange-500";
+    case "chemistry": 
+      return "bg-green-500";
+    case "english": 
+      return "bg-purple-500";
+    case "history": 
+      return "bg-red-500";
+    default: 
+      return "bg-primary";
+  }
 }

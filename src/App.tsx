@@ -11,6 +11,7 @@ import { Chatbot } from "./components/Chat/Chatbot";
 import FocusMode from "./pages/FocusMode";
 import DocumentsPage from "./pages/DocumentsPage";
 import ExamPrepPage from "./pages/ExamPrepPage";
+import ExplanationPage from "./pages/ExplanationPage";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/category/:category" element={<Index />} />
           <Route path="/note/:id" element={<NotePage />} />
+          <Route path="/note/:id/explanation" element={<ExplanationPage />} />
           <Route path="/focus" element={<FocusMode />} />
           <Route path="/documents" element={<DocumentsPage />} />
           <Route path="/exam-prep" element={<ExamPrepPage />} />

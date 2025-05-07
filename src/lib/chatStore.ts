@@ -2,6 +2,12 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage, ChatMessageRole, ChatState, Note } from '@/types';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [
@@ -47,41 +53,65 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ isLoading: loading });
   },
   
-  analyzeNote: (note: Note) => {
+  analyzeNote: async (note: Note) => {
     const { addMessage, setLoading } = get();
     
     // Skip if no note or no content
     if (!note || !note.content.trim()) return;
     
     setLoading(true);
+    addMessage("Analyzing your note...", "assistant");
     
-    // Simulate the LLM analyzing the note
-    setTimeout(() => {
-      // Generate some basic analysis based on note content
-      const contentLength = note.content.length;
-      let response = "";
-      
-      if (contentLength === 0) {
-        response = "Your note is empty. Would you like some ideas to get started?";
-      } else if (contentLength < 50) {
-        response = "Your note is quite brief. Consider expanding on the main points with more details or examples.";
-      } else {
-        // Extract potential keywords from content
-        const words = note.content.split(/\s+/).filter(word => word.length > 4);
-        const randomWord = words[Math.floor(Math.random() * words.length)] || 'topic';
-        
-        const suggestions = [
-          `I noticed you're writing about "${randomWord}". Have you considered exploring how this relates to other aspects of your project?`,
-          `Your note has good detail. To make it even better, you could add some structure with headings or bullet points.`,
-          `This looks like an interesting note! Consider adding some actionable next steps based on this information.`,
-          `I see potential for expanding on the "${randomWord}" concept. Would you like me to suggest some related ideas?`
-        ];
-        
-        response = suggestions[Math.floor(Math.random() * suggestions.length)];
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session) {
+        console.error("No authenticated session found");
+        addMessage("I need you to be signed in to analyze your notes.", "assistant");
+        setLoading(false);
+        return;
       }
       
-      addMessage(response, "assistant");
+      const { data, error } = await supabase.functions.invoke('analyze-note', {
+        body: { note },
+      });
+
+      if (error) {
+        console.error("Error analyzing note:", error);
+        addMessage("I encountered an error analyzing your note. Please try again later.", "assistant");
+        setLoading(false);
+        return;
+      }
+
+      // Process the analysis response
+      if (data.readyForExplanation) {
+        const mainTopic = data.mainTopic;
+        const concepts = data.concepts.slice(0, 3).join(", ");
+        
+        addMessage(
+          `I analyzed your note on "${mainTopic}". I found interesting concepts like ${concepts}. You've written enough that I can provide a detailed explanation. Click on the "Explain!" button when it appears to learn more.`,
+          "assistant"
+        );
+        
+        // Store analysis with the note
+        note.analysis = {
+          noteId: note.id,
+          mainTopic: data.mainTopic,
+          concepts: data.concepts,
+          readyForExplanation: true,
+          createdAt: new Date()
+        };
+      } else {
+        // Not enough content for a full explanation
+        addMessage(
+          "Your note is still developing. Try adding more details or examples to get better insights.",
+          "assistant"
+        );
+      }
+    } catch (error) {
+      console.error("Error in analyze note:", error);
+      addMessage("I encountered an error analyzing your note. Please try again later.", "assistant");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   }
 }));
