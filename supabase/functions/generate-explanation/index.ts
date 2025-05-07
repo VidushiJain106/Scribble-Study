@@ -1,7 +1,8 @@
 
+// Import the required modules - using stable versions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.3";
-import { OpenAI } from "https://esm.sh/openai@4.36.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.22.0";
+import { Configuration, OpenAIApi } from "https://esm.sh/openai@3.2.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,15 +16,17 @@ serve(async (req) => {
   }
   
   try {
+    // Initialize Supabase client with a stable version
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Set up OpenAI client
-    const openai = new OpenAI({
+    // Set up OpenAI client with a stable version
+    const configuration = new Configuration({
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     });
+    const openai = new OpenAIApi(configuration);
 
     // Get request body
     const requestData = await req.json();
@@ -51,42 +54,39 @@ serve(async (req) => {
     }
 
     // Generate explanation with AI
-    const systemPrompt = `
-      You are an educational assistant that creates detailed explanations from student notes.
-      Create a comprehensive explanation based on the topic and content provided.
-      Format your response as valid JSON with the fields:
-      - title: A descriptive title for the explanation
-      - sections: An array of sections, each with a 'title' and 'content' field
-      - summary: A concise summary of the main points
-      - furtherResources: (optional) An array of suggested resources for further reading
-    `;
-
-    const userPrompt = `
-      Create an educational explanation on the topic: ${topic}.
-      
-      Key concepts include: ${concepts ? concepts.join(", ") : "various concepts"}.
-      
-      Based on these notes:
-      ${noteContent}
-      
-      Create at least 3-5 sections with detailed content for each section.
-      The explanation should be educational and go beyond what's in the notes to provide a comprehensive understanding.
-    `;
-
-    const completion = await openai.chat.completions.create({
+    const response = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
+        {
+          role: "system", 
+          content: `You are an educational assistant that creates detailed explanations from student notes.
+          Create a comprehensive explanation based on the topic and content provided.
+          Format your response as valid JSON with the fields:
+          - title: A descriptive title for the explanation
+          - sections: An array of sections, each with a 'title' and 'content' field
+          - summary: A concise summary of the main points
+          - furtherResources: (optional) An array of suggested resources for further reading`
+        },
+        {
+          role: "user", 
+          content: `Create an educational explanation on the topic: ${topic}.
+          
+          Key concepts include: ${concepts ? concepts.join(", ") : "various concepts"}.
+          
+          Based on these notes:
+          ${noteContent}
+          
+          Create at least 3-5 sections with detailed content for each section.
+          The explanation should be educational and go beyond what's in the notes to provide a comprehensive understanding.`
+        }
       ],
-      response_format: { type: "json_object" },
       temperature: 0.7,
       max_tokens: 2000
     });
 
     // Parse the AI response
-    const explanationText = completion.choices[0].message.content || '{}';
-    const explanation = JSON.parse(explanationText);
+    const analysisText = response.data.choices[0].message?.content || '{}';
+    const explanation = JSON.parse(analysisText);
 
     // Store explanation in database
     const { data: explanationData, error: explanationError } = await supabaseClient

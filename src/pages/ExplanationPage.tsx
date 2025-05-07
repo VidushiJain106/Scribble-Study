@@ -7,6 +7,7 @@ import { QuizContent } from "@/components/Quiz/QuizContent";
 import { ExplanationLoading } from "@/components/Explanation/ExplanationLoading"; 
 import { ExplanationError } from "@/components/Explanation/ExplanationError";
 import { useExplanationData } from "@/hooks/useExplanationData";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Page component for displaying explanations and quizzes
@@ -16,29 +17,54 @@ const ExplanationPage = () => {
   const notes = useNoteStore(state => state.notes);
   const navigate = useNavigate();
   const [showQuiz, setShowQuiz] = useState(false);
+  const { toast } = useToast();
   
   const note = noteId ? notes.find(n => n.id === noteId) : null;
   const { 
     explanation, 
     quiz, 
     loading,
+    error,
     fetchExplanation, 
     generateQuiz 
   } = useExplanationData(noteId, note);
   
   useEffect(() => {
-    if (!note || !note.analysis || !note.analysis.readyForExplanation) {
+    if (!noteId) {
+      navigate('/');
+      return;
+    }
+    
+    if (!note) {
+      // Note not found
+      return;
+    }
+    
+    if (!note.analysis || !note.analysis.readyForExplanation) {
+      toast({
+        title: "Note not ready",
+        description: "This note needs more content before it can be explained",
+        variant: "destructive"
+      });
       navigate(`/note/${noteId}`);
       return;
     }
     
     fetchExplanation();
-  }, [noteId, note, navigate]);
+  }, [noteId, note, navigate, fetchExplanation, toast]);
   
   const handleTakeQuiz = async () => {
-    const quizData = await generateQuiz();
-    if (quizData) {
-      setShowQuiz(true);
+    try {
+      const quizData = await generateQuiz();
+      if (quizData) {
+        setShowQuiz(true);
+      }
+    } catch (err) {
+      toast({
+        title: "Quiz Error",
+        description: "Failed to generate quiz. Please try again later.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -50,8 +76,16 @@ const ExplanationPage = () => {
     return <ExplanationLoading isGeneratingQuiz={showQuiz && !quiz} />;
   }
   
-  if (!note || !explanation) {
-    return <ExplanationError />;
+  if (error) {
+    return <ExplanationError errorType="generic" noteId={noteId} />;
+  }
+  
+  if (!note) {
+    return <ExplanationError errorType="not-found" />;
+  }
+  
+  if (!explanation) {
+    return <ExplanationError errorType="not-ready" noteId={noteId} />;
   }
   
   return showQuiz && quiz ? (

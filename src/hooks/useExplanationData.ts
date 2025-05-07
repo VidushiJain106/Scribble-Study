@@ -11,6 +11,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
   const [explanation, setExplanation] = useState<Explanation | null>(null);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   /**
@@ -22,27 +23,27 @@ export function useExplanationData(noteId: string | undefined, note: any) {
     }
 
     setLoading(true);
+    setError(null);
     
     try {
       if (!isSupabaseConfigured()) {
-        toast({
-          title: "Connection Error",
-          description: "Cannot connect to Supabase. Please try again later.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return null;
+        throw new Error("Cannot connect to Supabase");
       }
       
       // Use withSupabase helper to safely fetch or generate explanation
       const explanation = await withSupabase(
         async (supabase) => {
           // First check if we have a stored explanation
-          const { data: existingExplanation } = await supabase
+          const { data: existingExplanation, error: fetchError } = await supabase
             .from('explanations')
             .select('*')
             .eq('note_id', noteId)
-            .single();
+            .maybeSingle();
+          
+          if (fetchError) {
+            console.error("Error fetching explanation:", fetchError);
+            throw new Error("Failed to fetch existing explanation");
+          }
           
           if (existingExplanation) {
             // Ensure we properly type the response from Supabase
@@ -56,6 +57,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
             };
           } else {
             // Generate a new explanation
+            console.log("Generating new explanation for note:", noteId);
             const { data, error } = await supabase.functions.invoke('generate-explanation', {
               body: {
                 noteId,
@@ -66,7 +68,12 @@ export function useExplanationData(noteId: string | undefined, note: any) {
             });
             
             if (error) {
-              throw new Error(error.message);
+              console.error("Error invoking generate-explanation:", error);
+              throw new Error(error.message || "Failed to generate explanation");
+            }
+            
+            if (!data) {
+              throw new Error("No data returned from explanation generation");
             }
             
             return {
@@ -91,54 +98,45 @@ export function useExplanationData(noteId: string | undefined, note: any) {
         setExplanation(explanation as Explanation);
         return explanation as Explanation;
       } else {
-        toast({
-          title: "Error",
-          description: "Failed to get explanation. Please try again later.",
-          variant: "destructive",
-        });
+        throw new Error("Failed to get explanation");
       }
     } catch (error) {
       console.error("Error fetching explanation:", error);
-      toast({
-        title: "Error",
-        description: "An error occurred while fetching the explanation.",
-        variant: "destructive",
-      });
+      setError(error instanceof Error ? error.message : "Unknown error occurred");
+      return null;
     } finally {
       setLoading(false);
     }
-    
-    return null;
   };
 
   /**
    * Generate or fetch quiz based on explanation
    */
   const generateQuiz = async () => {
-    if (!noteId || !explanation) return;
+    if (!noteId || !explanation) return null;
     
     setLoading(true);
+    setError(null);
     
     try {
       if (!isSupabaseConfigured()) {
-        toast({
-          title: "Connection Error",
-          description: "Cannot connect to Supabase. Please try again later.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
+        throw new Error("Cannot connect to Supabase");
       }
       
       // Use withSupabase helper to safely fetch or generate quiz
       const quiz = await withSupabase(
         async (supabase) => {
           // Check if we have a stored quiz
-          const { data: existingQuiz } = await supabase
+          const { data: existingQuiz, error: fetchError } = await supabase
             .from('quizzes')
             .select('*')
             .eq('note_id', noteId)
-            .single();
+            .maybeSingle();
+          
+          if (fetchError) {
+            console.error("Error fetching quiz:", fetchError);
+            throw new Error("Failed to fetch existing quiz");
+          }
           
           if (existingQuiz) {
             // Ensure we properly type the response from Supabase
@@ -152,6 +150,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
             };
           } else {
             // Generate a new quiz
+            console.log("Generating new quiz for note:", noteId);
             const { data, error } = await supabase.functions.invoke('generate-quiz', {
               body: {
                 noteId,
@@ -161,7 +160,12 @@ export function useExplanationData(noteId: string | undefined, note: any) {
             });
             
             if (error) {
-              throw new Error(error.message);
+              console.error("Error invoking generate-quiz:", error);
+              throw new Error(error.message || "Failed to generate quiz");
+            }
+            
+            if (!data) {
+              throw new Error("No data returned from quiz generation");
             }
             
             return {
@@ -181,30 +185,22 @@ export function useExplanationData(noteId: string | undefined, note: any) {
         setQuiz(quiz as Quiz);
         return quiz as Quiz;
       } else {
-        toast({
-          title: "Error",
-          description: "Failed to generate quiz. Please try again later.",
-          variant: "destructive",
-        });
+        throw new Error("Failed to generate quiz");
       }
     } catch (error) {
-      console.error("Error fetching quiz:", error);
-      toast({
-        title: "Error",
-        description: "An error occurred while generating the quiz.",
-        variant: "destructive",
-      });
+      console.error("Error generating quiz:", error);
+      setError(error instanceof Error ? error.message : "Unknown error occurred");
+      return null;
     } finally {
       setLoading(false);
     }
-    
-    return null;
   };
 
   return {
     explanation,
     quiz,
     loading,
+    error,
     fetchExplanation,
     generateQuiz,
   };

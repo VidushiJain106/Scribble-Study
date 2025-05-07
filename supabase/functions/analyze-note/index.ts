@@ -1,7 +1,8 @@
 
+// Import the required modules - using stable versions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.3";
-import { OpenAI } from "https://esm.sh/openai@4.36.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.22.0";
+import { Configuration, OpenAIApi } from "https://esm.sh/openai@3.2.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,15 +16,17 @@ serve(async (req) => {
   }
   
   try {
+    // Initialize Supabase client with a stable version
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Set up OpenAI client
-    const openai = new OpenAI({
+    // Set up OpenAI client with a stable version
+    const configuration = new Configuration({
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     });
+    const openai = new OpenAIApi(configuration);
 
     // Get request body
     const requestData = await req.json();
@@ -49,27 +52,27 @@ serve(async (req) => {
     }
 
     // Analyze the note with AI
-    const systemPrompt = `
-      You are an educational assistant that analyzes student notes.
-      Extract the main topic and key concepts from the provided notes.
-      Format your response as valid JSON with the fields:
-      - mainTopic: The primary subject of the notes (1-3 words)
-      - concepts: An array of key concepts mentioned (3-5 items)
-    `;
-
-    const userPrompt = `Analyze these notes and extract the main topic and key concepts:\n\n${note.content}`;
-
-    const completion = await openai.chat.completions.create({
+    const response = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
+        {
+          role: "system", 
+          content: `You are an educational assistant that analyzes student notes.
+          Extract the main topic and key concepts from the provided notes.
+          Format your response as valid JSON with the fields:
+          - mainTopic: The primary subject of the notes (1-3 words)
+          - concepts: An array of key concepts mentioned (3-5 items)`
+        },
+        { 
+          role: "user", 
+          content: `Analyze these notes and extract the main topic and key concepts:\n\n${note.content}` 
+        }
       ],
-      response_format: { type: "json_object" }
+      temperature: 0.7,
     });
 
     // Parse the AI response
-    const analysisText = completion.choices[0].message.content || '{}';
+    const analysisText = response.data.choices[0].message?.content || '{}';
     const analysis = JSON.parse(analysisText);
 
     // Store analysis in database
