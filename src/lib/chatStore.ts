@@ -109,9 +109,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
         console.log("Analysis response:", data);
 
         // Process the analysis response
-        if (data && (data.readyForExplanation || data.concepts)) {
+        if (data && data.concepts && data.concepts.length > 0) {
           const mainTopic = data.mainTopic || "your topic";
           const concepts = (data.concepts || []).slice(0, 3).join(", ") || "various concepts";
+          
+          // Always set readyForExplanation to true if we have concepts
+          const readyForExplanation = true;
           
           addMessage(
             `I analyzed your note on "${mainTopic}". I found interesting concepts like ${concepts}. You've written enough that I can provide a detailed explanation. Click on the "Explain!" button when it appears to learn more.`,
@@ -123,7 +126,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             noteId: note.id,
             mainTopic: data.mainTopic || "Topic",
             concepts: data.concepts || [],
-            readyForExplanation: data.readyForExplanation !== undefined ? data.readyForExplanation : true,
+            readyForExplanation: readyForExplanation,
             createdAt: new Date()
           };
         } else {
@@ -149,13 +152,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
         addMessage("I encountered an error analyzing your note. Please try again later.", "assistant");
         
         // Fallback analysis for development
-        note.analysis = {
-          noteId: note.id,
-          mainTopic: "Error Analysis",
-          concepts: ["Error"],
-          readyForExplanation: true,
-          createdAt: new Date()
-        };
+        if (note.content.length > 50) {
+          note.analysis = {
+            noteId: note.id,
+            mainTopic: "Error Analysis",
+            concepts: ["Error"],
+            readyForExplanation: true,
+            createdAt: new Date()
+          };
+        }
       }
     } catch (error) {
       console.error("Error in analyze note:", error);

@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -133,12 +134,35 @@ export function Editor({
   const handleExplainClick = () => {
     navigate(`/note/${noteId}/explanation`);
   };
+
+  const forceAnalysis = () => {
+    if (!note) return;
+    setIsAnalyzing(true);
+    const updatedNote = {
+      ...note,
+      content
+    };
+    analyzeNote(updatedNote);
+    setIsAnalyzing(false);
+    
+    toast({
+      title: "Analysis requested",
+      description: "Your note is being analyzed..."
+    });
+  };
+  
   if (!note) {
     return <div className="flex items-center justify-center h-full">
         <p>Note not found</p>
       </div>;
   }
+  
+  // Check if the note has analysis data and is ready for explanation
   const showExplainButton = note.analysis && note.analysis.readyForExplanation;
+  
+  // Also check if we have enough content but no analysis yet
+  const showAnalyzeButton = content.length > 50 && (!note.analysis || !note.analysis.readyForExplanation);
+  
   return <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex-1 flex items-center gap-3">
@@ -147,6 +171,11 @@ export function Editor({
           {showExplainButton && <Badge variant="outline" className="flex items-center gap-1 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors animate-pulse" onClick={handleExplainClick}>
               <Lightbulb className="h-3 w-3" />
               <span>Explain!</span>
+            </Badge>}
+          
+          {showAnalyzeButton && <Badge variant="outline" className="flex items-center gap-1 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={forceAnalysis}>
+              <GraduationCap className="h-3 w-3" />
+              <span>Analyze Note</span>
             </Badge>}
           
           {isAnalyzing && <Badge variant="outline" className="flex items-center gap-1">
@@ -167,6 +196,20 @@ export function Editor({
           </Button>
         </div>
       </div>
+      
+      {/* Add a prominent explain button at the top of the note content if available */}
+      {showExplainButton && (
+        <div className="px-4 py-3 bg-muted/50 border-b flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            <Lightbulb className="h-4 w-4 text-primary" />
+            <span>This note has been analyzed and is ready for explanation!</span>
+          </div>
+          <Button onClick={handleExplainClick} variant="default" size="sm" className="flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" />
+            <span>Explain This Topic</span>
+          </Button>
+        </div>
+      )}
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <div className="px-4 pt-2">
@@ -215,10 +258,12 @@ export function Editor({
             </div>}
         </TabsContent>
         
-        
+        <TabsContent value="draw" className="flex-1 p-0 overflow-hidden">
+          <DrawingCanvas onComplete={handleDrawingComplete} />
+        </TabsContent>
       </Tabs>
       
-      {note.analysis && note.analysis.readyForExplanation && <div className="fixed bottom-20 right-6 z-40">
+      {showExplainButton && <div className="fixed bottom-20 right-6 z-40">
           <Button onClick={handleExplainClick} className="flex items-center gap-2 shadow-lg animate-bounce" size="lg">
             <GraduationCap className="h-5 w-5" />
             <span>Explain This Topic!</span>

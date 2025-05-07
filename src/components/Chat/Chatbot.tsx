@@ -5,11 +5,12 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useChatStore } from "@/lib/chatStore";
 import { useNoteStore } from "@/lib/store";
-import { MessageSquare, X, SendHorizontal, Move } from "lucide-react";
+import { MessageSquare, X, SendHorizontal, Move, GraduationCap } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent } from "../ui/sheet";
+import { useNavigate } from "react-router-dom";
 
 type PositionType = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 
@@ -31,12 +32,17 @@ export function Chatbot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const draggableRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   
   // Position state
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState<PositionType>("bottom-right");
   const [coordinates, setCoordinates] = useState({ x: 0, y: 0 });
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  
+  // Current active note for explanation
+  const activeNote = notes.find(note => note.id === activeNoteId);
+  const canExplain = activeNote?.analysis?.readyForExplanation;
   
   // Scroll to bottom when new messages are added
   useEffect(() => {
@@ -72,6 +78,12 @@ export function Chatbot() {
     toggleChat();
     if (!isOpen) {
       markAsRead();
+    }
+  };
+
+  const handleExplainClick = () => {
+    if (activeNoteId) {
+      navigate(`/note/${activeNoteId}/explanation`);
     }
   };
 
@@ -172,6 +184,14 @@ export function Chatbot() {
                   <MessageSquare className="h-5 w-5 text-primary" />
                   <h3 className="font-medium">Note Assistant</h3>
                 </div>
+                
+                {canExplain && (
+                  <Button variant="outline" size="sm" onClick={handleExplainClick} className="ml-auto mr-2">
+                    <GraduationCap className="h-4 w-4 mr-1" />
+                    <span>Explain</span>
+                  </Button>
+                )}
+                
                 <Button variant="ghost" size="icon" onClick={toggleChat} className="h-8 w-8">
                   <X className="h-4 w-4" />
                 </Button>
@@ -249,6 +269,19 @@ export function Chatbot() {
               <h3 className="font-medium">Note Assistant</h3>
               <Move className="h-4 w-4 text-muted-foreground ml-2" />
             </div>
+            
+            {canExplain && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExplainClick} 
+                className="absolute left-1/2 transform -translate-x-1/2"
+              >
+                <GraduationCap className="h-4 w-4 mr-1" />
+                <span>Explain</span>
+              </Button>
+            )}
+            
             <Button 
               variant="ghost" 
               size="icon" 

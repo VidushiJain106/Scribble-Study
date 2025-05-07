@@ -2,7 +2,9 @@
 import { Sidebar } from "@/components/Dashboard/Sidebar";
 import { Editor } from "@/components/NoteEditor/Editor";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { useNoteStore } from "@/lib/store";
 import { Menu } from "lucide-react";
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 // Create a component for the floating trigger that will be conditionally rendered
@@ -23,6 +25,19 @@ const FloatingSidebarTrigger = () => {
 
 const NotePage = () => {
   const { id } = useParams<{ id: string }>();
+  const setActiveNote = useNoteStore(state => state.setActiveNote);
+  
+  // Set the active note ID when this page loads
+  useEffect(() => {
+    if (id) {
+      setActiveNote(id);
+    }
+    
+    // Clean up when component unmounts
+    return () => {
+      setActiveNote(null);
+    };
+  }, [id, setActiveNote]);
   
   if (!id) {
     return <div>Note ID is required</div>;
