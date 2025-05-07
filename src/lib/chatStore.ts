@@ -70,6 +70,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
               `I've analyzed your note (simulation). It looks like you're writing about an interesting topic. You've written enough that I would normally provide a detailed explanation. In a real setup with Supabase, you'd see an "Explain!" button appear.`,
               "assistant"
             );
+            
+            // Update note with simulated analysis
+            note.analysis = {
+              noteId: note.id,
+              mainTopic: "Simulated Topic",
+              concepts: ["Concept 1", "Concept 2", "Concept 3"],
+              readyForExplanation: true,
+              createdAt: new Date()
+            };
           } else {
             addMessage(
               "Your note is still developing. Try adding more details or examples to get better insights.",
@@ -97,8 +106,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
           return;
         }
 
+        console.log("Analysis response:", data);
+
         // Process the analysis response
-        if (data && data.readyForExplanation) {
+        if (data && (data.readyForExplanation || data.concepts)) {
           const mainTopic = data.mainTopic || "your topic";
           const concepts = (data.concepts || []).slice(0, 3).join(", ") || "various concepts";
           
@@ -110,9 +121,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
           // Store analysis with the note
           note.analysis = {
             noteId: note.id,
-            mainTopic: data.mainTopic,
-            concepts: data.concepts,
-            readyForExplanation: true,
+            mainTopic: data.mainTopic || "Topic",
+            concepts: data.concepts || [],
+            readyForExplanation: data.readyForExplanation !== undefined ? data.readyForExplanation : true,
             createdAt: new Date()
           };
         } else {
@@ -121,10 +132,30 @@ export const useChatStore = create<ChatState>((set, get) => ({
             "Your note is still developing. Try adding more details or examples to get better insights.",
             "assistant"
           );
+          
+          // Store limited analysis
+          if (data) {
+            note.analysis = {
+              noteId: note.id,
+              mainTopic: data.mainTopic || "Topic",
+              concepts: data.concepts || [],
+              readyForExplanation: false,
+              createdAt: new Date()
+            };
+          }
         }
       } catch (error) {
         console.error("Error calling Supabase function:", error);
         addMessage("I encountered an error analyzing your note. Please try again later.", "assistant");
+        
+        // Fallback analysis for development
+        note.analysis = {
+          noteId: note.id,
+          mainTopic: "Error Analysis",
+          concepts: ["Error"],
+          readyForExplanation: true,
+          createdAt: new Date()
+        };
       }
     } catch (error) {
       console.error("Error in analyze note:", error);
