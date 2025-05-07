@@ -58,36 +58,41 @@ export function useExplanationData(noteId: string | undefined, note: any) {
           } else {
             // Generate a new explanation
             console.log("Generating new explanation for note:", noteId);
-            const { data, error } = await supabase.functions.invoke('generate-explanation', {
-              body: {
+            try {
+              const { data, error } = await supabase.functions.invoke('generate-explanation', {
+                body: {
+                  noteId,
+                  topic: note.analysis.mainTopic,
+                  concepts: note.analysis.concepts,
+                  noteContent: note.content
+                },
+              });
+              
+              if (error) {
+                console.error("Error invoking generate-explanation:", error);
+                throw new Error(error.message || "Failed to generate explanation");
+              }
+              
+              if (!data) {
+                throw new Error("No data returned from explanation generation");
+              }
+              
+              return {
                 noteId,
                 topic: note.analysis.mainTopic,
-                concepts: note.analysis.concepts,
-                noteContent: note.content
-              },
-            });
-            
-            if (error) {
-              console.error("Error invoking generate-explanation:", error);
-              throw new Error(error.message || "Failed to generate explanation");
-            }
-            
-            if (!data) {
-              throw new Error("No data returned from explanation generation");
-            }
-            
-            return {
-              noteId,
-              topic: note.analysis.mainTopic,
-              title: data.title,
-              content: {
                 title: data.title,
-                sections: data.sections,
-                summary: data.summary,
-                furtherResources: data.furtherResources
-              },
-              createdAt: new Date()
-            };
+                content: {
+                  title: data.title,
+                  sections: data.sections,
+                  summary: data.summary,
+                  furtherResources: data.furtherResources
+                },
+                createdAt: new Date()
+              };
+            } catch (fnError) {
+              console.error("Function invocation error:", fnError);
+              throw new Error(`Failed to generate explanation: ${fnError.message}`);
+            }
           }
         },
         null
@@ -103,7 +108,8 @@ export function useExplanationData(noteId: string | undefined, note: any) {
     } catch (error) {
       console.error("Error fetching explanation:", error);
       setError(error instanceof Error ? error.message : "Unknown error occurred");
-      return null;
+      // Re-throw the error to be handled by the caller
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -151,30 +157,35 @@ export function useExplanationData(noteId: string | undefined, note: any) {
           } else {
             // Generate a new quiz
             console.log("Generating new quiz for note:", noteId);
-            const { data, error } = await supabase.functions.invoke('generate-quiz', {
-              body: {
+            try {
+              const { data, error } = await supabase.functions.invoke('generate-quiz', {
+                body: {
+                  noteId,
+                  topic: explanation.topic,
+                  explanation: JSON.stringify(explanation.content)
+                },
+              });
+              
+              if (error) {
+                console.error("Error invoking generate-quiz:", error);
+                throw new Error(error.message || "Failed to generate quiz");
+              }
+              
+              if (!data) {
+                throw new Error("No data returned from quiz generation");
+              }
+              
+              return {
                 noteId,
                 topic: explanation.topic,
-                explanation: JSON.stringify(explanation.content)
-              },
-            });
-            
-            if (error) {
-              console.error("Error invoking generate-quiz:", error);
-              throw new Error(error.message || "Failed to generate quiz");
+                introduction: data.introduction,
+                questions: data.questions,
+                createdAt: new Date()
+              };
+            } catch (fnError) {
+              console.error("Function invocation error:", fnError);
+              throw new Error(`Failed to generate quiz: ${fnError.message}`);
             }
-            
-            if (!data) {
-              throw new Error("No data returned from quiz generation");
-            }
-            
-            return {
-              noteId,
-              topic: explanation.topic,
-              introduction: data.introduction,
-              questions: data.questions,
-              createdAt: new Date()
-            };
           }
         },
         null
@@ -190,7 +201,8 @@ export function useExplanationData(noteId: string | undefined, note: any) {
     } catch (error) {
       console.error("Error generating quiz:", error);
       setError(error instanceof Error ? error.message : "Unknown error occurred");
-      return null;
+      // Re-throw the error to be handled by the caller
+      throw error;
     } finally {
       setLoading(false);
     }

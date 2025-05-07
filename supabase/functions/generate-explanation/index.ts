@@ -2,7 +2,6 @@
 // Import the required modules - using stable versions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.22.0";
-import { Configuration, OpenAIApi } from "https://esm.sh/openai@3.2.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,12 +20,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-
-    // Set up OpenAI client with a stable version
-    const configuration = new Configuration({
-      apiKey: Deno.env.get('OPENAI_API_KEY'),
-    });
-    const openai = new OpenAIApi(configuration);
 
     // Get request body
     const requestData = await req.json();
@@ -53,40 +46,69 @@ serve(async (req) => {
       );
     }
 
-    // Generate explanation with AI
-    const response = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system", 
-          content: `You are an educational assistant that creates detailed explanations from student notes.
-          Create a comprehensive explanation based on the topic and content provided.
-          Format your response as valid JSON with the fields:
-          - title: A descriptive title for the explanation
-          - sections: An array of sections, each with a 'title' and 'content' field
-          - summary: A concise summary of the main points
-          - furtherResources: (optional) An array of suggested resources for further reading`
-        },
-        {
-          role: "user", 
-          content: `Create an educational explanation on the topic: ${topic}.
-          
-          Key concepts include: ${concepts ? concepts.join(", ") : "various concepts"}.
-          
-          Based on these notes:
-          ${noteContent}
-          
-          Create at least 3-5 sections with detailed content for each section.
-          The explanation should be educational and go beyond what's in the notes to provide a comprehensive understanding.`
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 2000
+    // Generate explanation with AI using direct OpenAI API call
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not found');
+    }
+
+    // Call OpenAI API directly using fetch
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system", 
+            content: `You are an educational assistant that creates detailed explanations from student notes.
+            Create a comprehensive explanation based on the topic and content provided.
+            Format your response as valid JSON with the fields:
+            - title: A descriptive title for the explanation
+            - sections: An array of sections, each with a 'title' and 'content' field
+            - summary: A concise summary of the main points
+            - furtherResources: (optional) An array of suggested resources for further reading`
+          },
+          {
+            role: "user", 
+            content: `Create an educational explanation on the topic: ${topic}.
+            
+            Key concepts include: ${concepts ? concepts.join(", ") : "various concepts"}.
+            
+            Based on these notes:
+            ${noteContent}
+            
+            Create at least 3-5 sections with detailed content for each section.
+            The explanation should be educational and go beyond what's in the notes to provide a comprehensive understanding.`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      })
     });
 
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text();
+      console.error("OpenAI API error:", errorText);
+      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    }
+
     // Parse the AI response
-    const analysisText = response.data.choices[0].message?.content || '{}';
-    const explanation = JSON.parse(analysisText);
+    const responseData = await openaiResponse.json();
+    const analysisText = responseData.choices[0].message?.content || '{}';
+    
+    console.log("Raw explanation text:", analysisText);
+    
+    let explanation;
+    try {
+      explanation = JSON.parse(analysisText);
+    } catch (parseError) {
+      console.error("Error parsing AI response:", parseError, "Response was:", analysisText);
+      throw new Error("Failed to parse AI response");
+    }
 
     // Store explanation in database
     const { data: explanationData, error: explanationError } = await supabaseClient
@@ -116,7 +138,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in generate-explanation function:", error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

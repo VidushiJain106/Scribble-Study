@@ -36,7 +36,7 @@ const ExplanationPage = () => {
     }
     
     if (!note) {
-      // Note not found
+      // Note not found - no need to show a toast, just let the UI handle it
       return;
     }
     
@@ -50,7 +50,21 @@ const ExplanationPage = () => {
       return;
     }
     
-    fetchExplanation();
+    // Fetch explanation with error handling
+    const loadExplanation = async () => {
+      try {
+        await fetchExplanation();
+      } catch (err) {
+        console.error("Failed to load explanation:", err);
+        toast({
+          title: "Explanation Error",
+          description: "There was a problem loading the explanation. Please try again later.",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    loadExplanation();
   }, [noteId, note, navigate, fetchExplanation, toast]);
   
   const handleTakeQuiz = async () => {
@@ -60,6 +74,7 @@ const ExplanationPage = () => {
         setShowQuiz(true);
       }
     } catch (err) {
+      console.error("Quiz generation error:", err);
       toast({
         title: "Quiz Error",
         description: "Failed to generate quiz. Please try again later.",
