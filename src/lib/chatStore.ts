@@ -4,10 +4,25 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage, ChatMessageRole, ChatState, Note } from '@/types';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
+// Initialize Supabase client ONLY if environment variables are available
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Create a dummy client or real client based on whether we have credentials
+let supabase: ReturnType<typeof createClient> | null = null;
+
+// Only create the client if we have the required credentials
+if (supabaseUrl && supabaseAnonKey) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    console.log("Supabase client initialized successfully");
+  } catch (error) {
+    console.error("Failed to initialize Supabase client:", error);
+    supabase = null;
+  }
+} else {
+  console.warn("Supabase environment variables are missing. Supabase functionality will be limited.");
+}
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [
@@ -64,10 +79,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
     
     try {
       // Check if we have a valid Supabase client
-      if (!supabaseUrl || !supabaseAnonKey) {
-        console.error("Missing Supabase configuration");
-        addMessage("I'm having trouble connecting to the backend. Please check your configuration.", "assistant");
-        setLoading(false);
+      if (!supabase) {
+        console.warn("Supabase client not available. Providing fallback message.");
+        addMessage("I'm not connected to the backend yet. You'll need to connect to Supabase for full functionality. For now, I'll provide a simulated response.", "assistant");
+        
+        // Simulate analysis response after a short delay
+        setTimeout(() => {
+          if (note.content.length > 50) {
+            addMessage(
+              `I've analyzed your note (simulation). It looks like you're writing about an interesting topic. You've written enough that I would normally provide a detailed explanation. In a real setup with Supabase, you'd see an "Explain!" button appear.`,
+              "assistant"
+            );
+          } else {
+            addMessage(
+              "Your note is still developing. Try adding more details or examples to get better insights.",
+              "assistant"
+            );
+          }
+          setLoading(false);
+        }, 1500);
+        
         return;
       }
 

@@ -15,6 +15,12 @@ import ExplanationPage from "./pages/ExplanationPage";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useEffect } from "react";
 
+// Add console logging for debugging Supabase environment variables
+console.log("Supabase Environment Check:", {
+  url: import.meta.env.VITE_SUPABASE_URL ? "Set" : "Missing",
+  key: import.meta.env.VITE_SUPABASE_ANON_KEY ? "Set" : "Missing"
+});
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
