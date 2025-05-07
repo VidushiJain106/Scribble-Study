@@ -8,6 +8,7 @@ import { ExplanationLoading } from "@/components/Explanation/ExplanationLoading"
 import { ExplanationError } from "@/components/Explanation/ExplanationError";
 import { useExplanationData } from "@/hooks/useExplanationData";
 import { useToast } from "@/hooks/use-toast";
+import { isNoteReadyForExplanation } from "@/services/explanationService";
 
 /**
  * Page component for displaying explanations and quizzes
@@ -49,7 +50,7 @@ const ExplanationPage = () => {
       isReady: note.analysis?.readyForExplanation ? 'yes' : 'no'
     });
     
-    if (!note.analysis || !note.analysis.readyForExplanation) {
+    if (!isNoteReadyForExplanation(note)) {
       console.log("Note not ready for explanation");
       toast({
         title: "Note not ready",

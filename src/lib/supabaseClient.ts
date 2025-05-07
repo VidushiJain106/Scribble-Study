@@ -1,3 +1,4 @@
+
 import { supabase as supabaseIntegrationClient } from "@/integrations/supabase/client";
 
 console.warn("supabaseClient.ts is deprecated - please use src/integrations/supabase/client.ts instead");
@@ -36,57 +37,6 @@ export async function withSupabase<T>(
     return fallback;
   }
 }
-
-/**
- * Helper to upload a file to Supabase storage
- */
-export const uploadNoteAttachment = async (userId: string, file: File, noteId: string) => {
-  return supabaseIntegrationClient.storage
-    .from('note_attachments')
-    .upload(`${userId}/${noteId}/${file.name}`, file, {
-      cacheControl: '3600',
-      upsert: false,
-    });
-};
-
-/**
- * Helper to save user data like categories to Supabase storage
- */
-export const saveUserData = async (userId: string, dataType: string, data: any) => {
-  return supabaseIntegrationClient.storage
-    .from('user_data')
-    .upload(`${userId}/${dataType}.json`, JSON.stringify(data), {
-      cacheControl: '3600',
-      contentType: 'application/json',
-      upsert: true,
-    });
-};
-
-/**
- * Helper to load user data like categories from Supabase storage
- */
-export const loadUserData = async (userId: string, dataType: string) => {
-  try {
-    const { data, error } = await supabaseIntegrationClient.storage
-      .from('user_data')
-      .download(`${userId}/${dataType}.json`);
-      
-    if (error) throw error;
-    
-    const text = await data.text();
-    const jsonData = JSON.parse(text);
-    
-    return { data: jsonData, error: null };
-  } catch (error: any) {
-    // If the file doesn't exist yet, that's not really an error
-    if (error.message?.includes('The resource was not found')) {
-      return { data: null, error: null };
-    }
-    
-    console.error(`Error loading ${dataType}:`, error);
-    return { error };
-  }
-};
 
 // Default export for backward compatibility
 export default supabaseIntegrationClient;
