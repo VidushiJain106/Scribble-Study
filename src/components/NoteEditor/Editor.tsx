@@ -17,7 +17,7 @@ import { FontFormatBar } from "./FontFormatBar";
 import { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "../ui/badge";
-import { useChatStore } from "@/lib/store";
+import { useChatStore } from "@/lib/chatStore";
 import { createClient } from "@supabase/supabase-js";
 
 // Initialize Supabase client
