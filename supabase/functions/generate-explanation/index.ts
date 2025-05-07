@@ -15,6 +15,8 @@ serve(async (req) => {
   }
   
   try {
+    console.log("Explanation generation started");
+    
     // Initialize Supabase client with a stable version
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -25,7 +27,10 @@ serve(async (req) => {
     const requestData = await req.json();
     const { noteId, topic, concepts, noteContent } = requestData;
 
+    console.log(`Processing request for note: ${noteId}, topic: ${topic}`);
+    
     if (!noteId || !topic || !noteContent) {
+      console.error("Invalid request - missing required fields");
       return new Response(
         JSON.stringify({ error: 'Invalid request: noteId, topic and noteContent are required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -33,13 +38,18 @@ serve(async (req) => {
     }
 
     // Check if we already have an explanation for this note
-    const { data: existingExplanation } = await supabaseClient
+    const { data: existingExplanation, error: existingError } = await supabaseClient
       .from('explanations')
       .select('*')
       .eq('note_id', noteId)
       .maybeSingle();
+      
+    if (existingError) {
+      console.error("Error checking existing explanation:", existingError);
+    }
 
     if (existingExplanation) {
+      console.log("Using existing explanation from database");
       return new Response(
         JSON.stringify(existingExplanation.content),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -49,9 +59,12 @@ serve(async (req) => {
     // Generate explanation with AI using OpenRouter API
     const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
     if (!openRouterApiKey) {
+      console.error("OpenRouter API key not found");
       throw new Error('OpenRouter API key not found');
     }
 
+    console.log("Calling OpenRouter API to generate explanation");
+    
     // Call OpenRouter API directly using fetch
     const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -113,6 +126,7 @@ serve(async (req) => {
     let explanation;
     try {
       explanation = JSON.parse(analysisText);
+      console.log("Successfully parsed explanation JSON");
     } catch (parseError) {
       console.error("Error parsing AI response:", parseError, "Response was:", analysisText);
       
@@ -124,16 +138,42 @@ serve(async (req) => {
         if (jsonStart >= 0 && jsonEnd > jsonStart) {
           const cleanerJson = analysisText.substring(jsonStart, jsonEnd);
           explanation = JSON.parse(cleanerJson);
+          console.log("Successfully parsed explanation JSON after cleanup");
         } else {
           throw new Error("Could not locate valid JSON in response");
         }
       } catch (secondError) {
         console.error("Failed second parse attempt:", secondError);
-        throw new Error("Failed to parse AI response");
+        
+        // Last resort: provide an explanation with the error to help debugging
+        explanation = {
+          title: "Explanation Generation Error",
+          sections: [
+            {
+              title: "Error Information",
+              content: "There was an error creating your explanation. Please try again later."
+            }
+          ],
+          summary: "Error generating explanation: " + (parseError.message || "Unknown parsing error")
+        };
+        
+        // Since we failed to parse but provided a fallback, we should still save something
+        console.log("Using fallback explanation due to parsing errors");
       }
     }
 
+    // Ensure explanation has all required fields even if some parsing succeeded
+    if (!explanation.title) explanation.title = topic || "Explanation";
+    if (!explanation.sections || !Array.isArray(explanation.sections) || explanation.sections.length === 0) {
+      explanation.sections = [{
+        title: "Overview", 
+        content: "Content could not be properly generated. Please try again."
+      }];
+    }
+    if (!explanation.summary) explanation.summary = "Summary could not be generated.";
+
     // Store explanation in database
+    console.log("Storing explanation in database");
     const { data: explanationData, error: explanationError } = await supabaseClient
       .from('explanations')
       .insert({
@@ -148,11 +188,13 @@ serve(async (req) => {
     if (explanationError) {
       console.error("Error storing explanation:", explanationError);
       return new Response(
-        JSON.stringify({ error: 'Failed to store explanation' }),
+        JSON.stringify({ error: 'Failed to store explanation', details: explanationError }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
 
+    console.log("Explanation generation completed successfully");
+    
     // Return the explanation content
     return new Response(
       JSON.stringify(explanation),
@@ -161,7 +203,11 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in generate-explanation function:", error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ 
+        error: 'Internal server error', 
+        details: error.message,
+        timestamp: new Date().toISOString()
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
