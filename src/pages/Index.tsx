@@ -7,6 +7,8 @@ import { useNoteStore } from "@/lib/store";
 import { NoteCategory } from "@/types";
 import { Menu, PenLine, Plus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { useEffect } from "react";
 
 // Create a component for the floating trigger that will be conditionally rendered
 const FloatingSidebarTrigger = () => {
@@ -23,15 +25,32 @@ const FloatingSidebarTrigger = () => {
 };
 
 const Index = () => {
+  console.log("Index component rendering");
+  
   const createNote = useNoteStore(state => state.createNote);
   const categoryItems = useNoteStore(state => state.categoryItems);
   const navigate = useNavigate();
   
   const { category } = useParams<{ category?: string }>();
   
+  // Debug log
+  useEffect(() => {
+    console.log("Index component mounted", { category });
+    
+    return () => {
+      console.log("Index component unmounted");
+    };
+  }, [category]);
+  
   const handleCreateNote = () => {
-    const newNoteId = createNote(category as NoteCategory);
-    navigate(`/note/${newNoteId}`);
+    try {
+      console.log("Creating new note", { category });
+      const newNoteId = createNote(category as NoteCategory);
+      console.log("Note created with ID:", newNoteId);
+      navigate(`/note/${newNoteId}`);
+    } catch (error) {
+      console.error("Error creating note:", error);
+    }
   };
 
   let pageTitle = "All Notes";
@@ -39,7 +58,7 @@ const Index = () => {
     pageTitle = `${category.charAt(0).toUpperCase() + category.slice(1)} Notes`;
     
     // Check if this is a subcategory and show the parent in the title
-    const categoryItem = categoryItems.find(item => item.name.toLowerCase() === category.toLowerCase());
+    const categoryItem = categoryItems?.find(item => item.name.toLowerCase() === category.toLowerCase());
     if (categoryItem?.parent) {
       pageTitle = `${categoryItem.name} Notes (${categoryItem.parent})`;
     }
@@ -48,7 +67,9 @@ const Index = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <Sidebar />
+        <ErrorBoundary>
+          <Sidebar />
+        </ErrorBoundary>
         <main className="flex-1 p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
@@ -78,7 +99,9 @@ const Index = () => {
             </div>
           )}
           
-          <NoteList category={category as NoteCategory | undefined} />
+          <ErrorBoundary>
+            <NoteList category={category as NoteCategory | undefined} />
+          </ErrorBoundary>
         </main>
       </div>
     </SidebarProvider>
