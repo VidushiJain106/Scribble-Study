@@ -1,8 +1,8 @@
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Plus, FolderPlus } from "lucide-react";
+import { Plus, FolderPlus, FileText, Clock, GraduationCap, PenLine } from "lucide-react";
 import { useNoteStore } from "@/lib/store";
 import { useCategoryStore } from "@/lib/categoryStore";
 import { UserMenu } from "./UserMenu";
@@ -31,15 +31,20 @@ export function Sidebar() {
     setOpenMobile(false); // Close the sidebar on mobile when clicking a category
   };
 
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    setOpenMobile(false); // Close the sidebar on mobile when navigating
+  };
+
   return (
-    <aside className="border-r flex flex-col w-64 py-4">
+    <aside className="border-r flex flex-col w-64 py-4 h-full">
       <div className="px-6">
         <Button 
           variant="ghost" 
           className="justify-start w-full mb-4"
           onClick={() => {
             navigate("/");
-            setOpenMobile(false); // Close the sidebar on mobile when clicking home
+            setOpenMobile(false);
           }}
         >
           ScribbleSnap
@@ -66,17 +71,46 @@ export function Sidebar() {
       <Separator className="my-4" />
       
       <div className="flex-1 px-6 overflow-y-auto">
-        <h4 className="mb-2 font-semibold text-sm">Categories</h4>
+        <h4 className="mb-2 font-semibold text-sm">Navigation</h4>
         <Button 
           variant="ghost" 
-          className="justify-start w-full"
-          onClick={() => {
-            navigate("/");
-            setOpenMobile(false); // Close the sidebar on mobile when clicking All Notes
-          }}
+          className="justify-start w-full mb-2 flex items-center gap-2"
+          onClick={() => handleNavigate("/")}
         >
+          <FileText className="h-4 w-4" />
           All Notes
         </Button>
+        
+        <Button 
+          variant="ghost" 
+          className="justify-start w-full mb-2 flex items-center gap-2"
+          onClick={() => handleNavigate("/focus")}
+        >
+          <Clock className="h-4 w-4" />
+          Focus Mode
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          className="justify-start w-full mb-2 flex items-center gap-2"
+          onClick={() => handleNavigate("/exam-prep")}
+        >
+          <GraduationCap className="h-4 w-4" />
+          Exam Prep
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          className="justify-start w-full mb-2 flex items-center gap-2"
+          onClick={() => handleNavigate("/documents")}
+        >
+          <PenLine className="h-4 w-4" />
+          Upload Documents
+        </Button>
+
+        <Separator className="my-4" />
+        
+        <h4 className="mb-2 font-semibold text-sm">Categories</h4>
         {categories.map((category) => (
           <Button
             key={category}

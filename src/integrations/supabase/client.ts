@@ -26,3 +26,75 @@ export const supabase = createClient<ExtendedDatabase>(SUPABASE_URL, SUPABASE_PU
     storage: localStorage,
   }
 });
+
+// Helper functions for storage operations
+export const uploadNoteAttachment = async (userId: string, file: File, noteId: string) => {
+  const filePath = `${userId}/${noteId}/${file.name}`;
+  
+  try {
+    const { data, error } = await supabase.storage
+      .from('note_attachments')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+      
+    if (error) throw error;
+    
+    // Get the public URL for the file
+    const { data: { publicUrl } } = supabase.storage
+      .from('note_attachments')
+      .getPublicUrl(filePath);
+      
+    return { data: { ...data, publicUrl }, error: null };
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    return { error };
+  }
+};
+
+export const saveUserData = async (userId: string, dataType: string, data: any) => {
+  const filePath = `${userId}/${dataType}.json`;
+  
+  try {
+    const { data: uploadData, error } = await supabase.storage
+      .from('user_data')
+      .upload(filePath, JSON.stringify(data), {
+        cacheControl: '3600',
+        contentType: 'application/json',
+        upsert: true,
+      });
+      
+    if (error) throw error;
+    
+    return { data: uploadData, error: null };
+  } catch (error) {
+    console.error(`Error saving ${dataType}:`, error);
+    return { error };
+  }
+};
+
+export const loadUserData = async (userId: string, dataType: string) => {
+  const filePath = `${userId}/${dataType}.json`;
+  
+  try {
+    const { data, error } = await supabase.storage
+      .from('user_data')
+      .download(filePath);
+      
+    if (error) throw error;
+    
+    const text = await data.text();
+    const jsonData = JSON.parse(text);
+    
+    return { data: jsonData, error: null };
+  } catch (error) {
+    // If the file doesn't exist yet, that's not really an error
+    if ((error as any).message?.includes('The resource was not found')) {
+      return { data: null, error: null };
+    }
+    
+    console.error(`Error loading ${dataType}:`, error);
+    return { error };
+  }
+};

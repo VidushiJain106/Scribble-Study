@@ -58,4 +58,101 @@ export async function withSupabase<T>(
   }
 }
 
+/**
+ * Helper to upload a file to Supabase storage
+ * @param userId The user ID to use as the folder name
+ * @param file The file to upload
+ * @param path Optional path within the user's folder
+ * @returns Object with the upload result
+ */
+export async function uploadNoteAttachment(userId: string, file: File, noteId: string) {
+  if (!supabaseClient) return { error: "Supabase client not available" };
+  
+  const filePath = `${userId}/${noteId}/${file.name}`;
+  
+  try {
+    const { data, error } = await supabaseClient.storage
+      .from('note_attachments')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+      
+    if (error) throw error;
+    
+    // Get the public URL for the file
+    const { data: { publicUrl } } = supabaseClient.storage
+      .from('note_attachments')
+      .getPublicUrl(filePath);
+      
+    return { data: { ...data, publicUrl }, error: null };
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    return { error };
+  }
+}
+
+/**
+ * Helper to save user data like categories to Supabase storage
+ * @param userId The user ID to use as the folder name
+ * @param dataType The type of data (e.g., 'categories')
+ * @param data The data to save
+ * @returns Object with the operation result
+ */
+export async function saveUserData(userId: string, dataType: string, data: any) {
+  if (!supabaseClient) return { error: "Supabase client not available" };
+  
+  const filePath = `${userId}/${dataType}.json`;
+  
+  try {
+    const { data: uploadData, error } = await supabaseClient.storage
+      .from('user_data')
+      .upload(filePath, JSON.stringify(data), {
+        cacheControl: '3600',
+        contentType: 'application/json',
+        upsert: true,
+      });
+      
+    if (error) throw error;
+    
+    return { data: uploadData, error: null };
+  } catch (error) {
+    console.error(`Error saving ${dataType}:`, error);
+    return { error };
+  }
+}
+
+/**
+ * Helper to load user data like categories from Supabase storage
+ * @param userId The user ID to use as the folder name
+ * @param dataType The type of data (e.g., 'categories')
+ * @returns Object with the operation result
+ */
+export async function loadUserData(userId: string, dataType: string) {
+  if (!supabaseClient) return { error: "Supabase client not available" };
+  
+  const filePath = `${userId}/${dataType}.json`;
+  
+  try {
+    const { data, error } = await supabaseClient.storage
+      .from('user_data')
+      .download(filePath);
+      
+    if (error) throw error;
+    
+    const text = await data.text();
+    const jsonData = JSON.parse(text);
+    
+    return { data: jsonData, error: null };
+  } catch (error) {
+    // If the file doesn't exist yet, that's not really an error
+    if (error.message?.includes('The resource was not found')) {
+      return { data: null, error: null };
+    }
+    
+    console.error(`Error loading ${dataType}:`, error);
+    return { error };
+  }
+}
+
 export default supabaseClient;
