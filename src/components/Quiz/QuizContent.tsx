@@ -5,13 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Quiz, QuizAnswer, QuizQuestion } from "@/types";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle, ChevronDown, ChevronUp, HelpCircle, Lightbulb } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { withSupabase, getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
 
 interface QuizContentProps {
   quiz: Quiz;
@@ -67,17 +62,36 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation }: QuizConte
     setIsEvaluating(true);
     
     try {
-      // Call the evaluate answer function
-      const { data, error } = await supabase.functions.invoke('evaluate-answer', {
-        body: {
-          question: currentQuestion,
-          answer: answer.answer,
-          topic: quiz.topic,
-        },
-      });
+      // Check if Supabase is available
+      if (!isSupabaseConfigured()) {
+        toast({
+          title: "Service unavailable",
+          description: "Could not connect to evaluation service. Please try again later.",
+          variant: "destructive",
+        });
+        setIsEvaluating(false);
+        return;
+      }
       
-      if (error) {
-        throw new Error(error.message);
+      // Call the evaluate answer function using the withSupabase helper
+      const data = await withSupabase(
+        async (supabase) => {
+          const { data, error } = await supabase.functions.invoke('evaluate-answer', {
+            body: {
+              question: currentQuestion,
+              answer: answer.answer,
+              topic: quiz.topic,
+            },
+          });
+          
+          if (error) throw new Error(error.message);
+          return data;
+        },
+        null // fallback value if Supabase operation fails
+      );
+      
+      if (!data) {
+        throw new Error("Failed to evaluate answer");
       }
       
       const updatedAnswer: QuizAnswer = {
@@ -253,3 +267,4 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation }: QuizConte
     </div>
   );
 }
+

@@ -5,14 +5,10 @@ import { useNoteStore } from "@/lib/store";
 import { ExplanationContent } from "@/components/Explanation/ExplanationContent";
 import { QuizContent } from "@/components/Quiz/QuizContent";
 import { Explanation, Quiz } from "@/types";
-import { createClient } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { withSupabase, getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { useToast } from "@/hooks/use-toast";
 
 const ExplanationPage = () => {
   const { id: noteId } = useParams<{ id: string }>();
@@ -22,6 +18,7 @@ const ExplanationPage = () => {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [showQuiz, setShowQuiz] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   
   const note = noteId ? notes.find(n => n.id === noteId) : null;
   
@@ -35,106 +32,169 @@ const ExplanationPage = () => {
       setLoading(true);
       
       try {
-        // First check if we have a stored explanation
-        const { data: existingExplanation } = await supabase
-          .from('explanations')
-          .select('*')
-          .eq('note_id', noteId)
-          .single();
+        if (!isSupabaseConfigured()) {
+          toast({
+            title: "Connection Error",
+            description: "Cannot connect to Supabase. Please try again later.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
         
-        if (existingExplanation) {
-          setExplanation({
-            id: existingExplanation.id,
-            noteId: existingExplanation.note_id,
-            topic: existingExplanation.topic,
-            title: existingExplanation.title,
-            content: existingExplanation.content,
-            createdAt: new Date(existingExplanation.created_at)
-          });
+        // Use withSupabase helper to safely fetch or generate explanation
+        const explanation = await withSupabase(
+          async (supabase) => {
+            // First check if we have a stored explanation
+            const { data: existingExplanation } = await supabase
+              .from('explanations')
+              .select('*')
+              .eq('note_id', noteId)
+              .single();
+            
+            if (existingExplanation) {
+              return {
+                id: existingExplanation.id,
+                noteId: existingExplanation.note_id,
+                topic: existingExplanation.topic,
+                title: existingExplanation.title,
+                content: existingExplanation.content,
+                createdAt: new Date(existingExplanation.created_at)
+              };
+            } else {
+              // Generate a new explanation
+              const { data, error } = await supabase.functions.invoke('generate-explanation', {
+                body: {
+                  noteId,
+                  topic: note.analysis.mainTopic,
+                  concepts: note.analysis.concepts,
+                  noteContent: note.content
+                },
+              });
+              
+              if (error) {
+                throw new Error(error.message);
+              }
+              
+              return {
+                noteId,
+                topic: note.analysis.mainTopic,
+                title: data.title,
+                content: {
+                  title: data.title,
+                  sections: data.sections,
+                  summary: data.summary,
+                  furtherResources: data.furtherResources
+                },
+                createdAt: new Date()
+              };
+            }
+          },
+          null
+        );
+        
+        if (explanation) {
+          setExplanation(explanation);
         } else {
-          // Generate a new explanation
-          const { data, error } = await supabase.functions.invoke('generate-explanation', {
-            body: {
-              noteId,
-              topic: note.analysis.mainTopic,
-              concepts: note.analysis.concepts,
-              noteContent: note.content
-            },
-          });
-          
-          if (error) {
-            throw new Error(error.message);
-          }
-          
-          setExplanation({
-            noteId,
-            topic: note.analysis.mainTopic,
-            title: data.title,
-            content: {
-              title: data.title,
-              sections: data.sections,
-              summary: data.summary,
-              furtherResources: data.furtherResources
-            },
-            createdAt: new Date()
+          toast({
+            title: "Error",
+            description: "Failed to get explanation. Please try again later.",
+            variant: "destructive",
           });
         }
       } catch (error) {
         console.error("Error fetching explanation:", error);
+        toast({
+          title: "Error",
+          description: "An error occurred while fetching the explanation.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
     
     fetchExplanation();
-  }, [noteId, note, navigate]);
+  }, [noteId, note, navigate, toast]);
   
   const handleTakeQuiz = async () => {
     setLoading(true);
     
     try {
-      // Check if we have a stored quiz
-      const { data: existingQuiz } = await supabase
-        .from('quizzes')
-        .select('*')
-        .eq('note_id', noteId)
-        .single();
-      
-      if (existingQuiz) {
-        setQuiz({
-          id: existingQuiz.id,
-          noteId: existingQuiz.note_id,
-          topic: existingQuiz.topic,
-          introduction: existingQuiz.introduction,
-          questions: existingQuiz.questions,
-          createdAt: new Date(existingQuiz.created_at)
+      if (!isSupabaseConfigured()) {
+        toast({
+          title: "Connection Error",
+          description: "Cannot connect to Supabase. Please try again later.",
+          variant: "destructive",
         });
-      } else if (explanation) {
-        // Generate a new quiz
-        const { data, error } = await supabase.functions.invoke('generate-quiz', {
-          body: {
-            noteId,
-            topic: explanation.topic,
-            explanation: JSON.stringify(explanation.content)
-          },
-        });
-        
-        if (error) {
-          throw new Error(error.message);
-        }
-        
-        setQuiz({
-          noteId,
-          topic: explanation.topic,
-          introduction: data.introduction,
-          questions: data.questions,
-          createdAt: new Date()
-        });
+        setLoading(false);
+        return;
       }
       
-      setShowQuiz(true);
+      // Use withSupabase helper to safely fetch or generate quiz
+      const quiz = await withSupabase(
+        async (supabase) => {
+          // Check if we have a stored quiz
+          const { data: existingQuiz } = await supabase
+            .from('quizzes')
+            .select('*')
+            .eq('note_id', noteId)
+            .single();
+          
+          if (existingQuiz) {
+            return {
+              id: existingQuiz.id,
+              noteId: existingQuiz.note_id,
+              topic: existingQuiz.topic,
+              introduction: existingQuiz.introduction,
+              questions: existingQuiz.questions,
+              createdAt: new Date(existingQuiz.created_at)
+            };
+          } else if (explanation) {
+            // Generate a new quiz
+            const { data, error } = await supabase.functions.invoke('generate-quiz', {
+              body: {
+                noteId,
+                topic: explanation.topic,
+                explanation: JSON.stringify(explanation.content)
+              },
+            });
+            
+            if (error) {
+              throw new Error(error.message);
+            }
+            
+            return {
+              noteId,
+              topic: explanation.topic,
+              introduction: data.introduction,
+              questions: data.questions,
+              createdAt: new Date()
+            };
+          }
+          
+          return null;
+        },
+        null
+      );
+      
+      if (quiz) {
+        setQuiz(quiz);
+        setShowQuiz(true);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to generate quiz. Please try again later.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Error fetching quiz:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while generating the quiz.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -181,3 +241,4 @@ const ExplanationPage = () => {
 };
 
 export default ExplanationPage;
+

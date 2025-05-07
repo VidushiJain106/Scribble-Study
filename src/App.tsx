@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,11 +15,11 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { useEffect } from "react";
 import LandingPage from "./pages/LandingPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { isSupabaseConfigured } from "./lib/supabaseClient";
 
-// Add console logging for debugging Supabase environment variables
-console.log("Supabase Environment Check:", {
-  url: import.meta.env.VITE_SUPABASE_URL ? "Set" : "Missing",
-  key: import.meta.env.VITE_SUPABASE_ANON_KEY ? "Set" : "Missing"
+// Add console logging for debugging Supabase configuration
+console.log("Supabase Configuration Check:", {
+  isConfigured: isSupabaseConfigured() ? "Yes" : "No"
 });
 
 const queryClient = new QueryClient({
@@ -50,11 +49,10 @@ const App = () => {
     };
   }, []);
 
-  // Check for critical environment variables and log their status
+  // Check Supabase configuration
   useEffect(() => {
-    console.log("Environment check:", {
-      supabaseUrl: import.meta.env.VITE_SUPABASE_URL ? "Set" : "Missing",
-      supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY ? "Set" : "Missing",
+    console.log("Supabase configuration check:", {
+      isConfigured: isSupabaseConfigured() ? "Yes" : "No"
     });
   }, []);
 
