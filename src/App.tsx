@@ -91,7 +91,7 @@ const App = () => {
                       </ProtectedRoute>
                     </ErrorBoundary>
                   } />
-                  <Route path="/category/:category" element={
+                  <Route path="/app/category/:category" element={
                     <ErrorBoundary>
                       <ProtectedRoute>
                         <Index />

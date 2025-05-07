@@ -1,166 +1,132 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.3";
+import { OpenAI } from "https://esm.sh/openai@4.36.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface QuizRequest {
-  noteId: string;
-  topic: string;
-  explanation: string;
-}
-
-interface QuizQuestion {
-  id: string;
-  question: string;
-  difficulty: 'easy' | 'moderate' | 'hard';
-  hint?: string;
-  explanation?: string;
-}
-
-interface QuizResponse {
-  questions: QuizQuestion[];
-  topic: string;
-  introduction: string;
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: corsHeaders,
-      status: 204,
-    });
+    return new Response(null, { headers: corsHeaders });
   }
   
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'No authorization header provided' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      });
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
-    const apiKey = Deno.env.get('OPENROUTER_API_KEY');
-    
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API key not configured' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
-    
-    // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-    
-    // Parse request data
-    const requestData = await req.json() as QuizRequest;
-    
-    if (!requestData || !requestData.topic || !requestData.explanation) {
-      return new Response(JSON.stringify({ error: 'Invalid request data' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
+
+    // Set up OpenAI client
+    const openai = new OpenAI({
+      apiKey: Deno.env.get('OPENAI_API_KEY'),
+    });
+
+    // Get request body
+    const requestData = await req.json();
+    const { noteId, topic, explanation } = requestData;
+
+    if (!noteId || !topic || !explanation) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request: noteId, topic and explanation are required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
-    
-    console.log(`Generating quiz for topic: ${requestData.topic}`);
-    
-    // Call OpenRouter API
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': Deno.env.get('APP_URL') || 'https://localhost:3000',
-        'X-Title': 'ScribbleSnap Quiz Generation'
-      },
-      body: JSON.stringify({
-        model: 'openai/gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system', 
-            content: `You are an educational assessment expert creating quiz questions on academic topics. Create three questions of increasing difficulty to test understanding.
-            
-            Return your response as a JSON object with:
-            - "topic": The main topic being tested
-            - "introduction": A brief introduction to the quiz
-            - "questions": An array of 3 questions with fields:
-              - "id": A unique identifier (string)
-              - "question": The question text (should be open-ended, not multiple choice)
-              - "difficulty": One of: "easy", "moderate", "hard" (one of each)
-              - "hint": A helpful hint if the student gets stuck (optional)
-              - "explanation": A brief explanation of what a good answer would include`
-          },
-          {
-            role: 'user',
-            content: `Create quiz questions for the topic: ${requestData.topic}
-            
-            This explanation has been provided to students:
-            "${requestData.explanation}"`
-          }
-        ],
-        response_format: { type: 'json_object' }
+
+    // Check if we already have a quiz for this note
+    const { data: existingQuiz } = await supabaseClient
+      .from('quizzes')
+      .select('*')
+      .eq('note_id', noteId)
+      .single();
+
+    if (existingQuiz) {
+      return new Response(
+        JSON.stringify({
+          introduction: existingQuiz.introduction,
+          questions: existingQuiz.questions
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Generate quiz with AI
+    const systemPrompt = `
+      You are an educational quiz creator that creates assessment questions based on learning materials.
+      Create a quiz with multiple choice and open-ended questions based on the explanation provided.
+      Format your response as valid JSON with the fields:
+      - introduction: A brief introduction to the quiz
+      - questions: An array of question objects with the following fields:
+        - id: A unique identifier string for the question
+        - question: The question text
+        - type: Either "multiple_choice" or "open_ended"
+        - options: An array of possible answers (for multiple_choice questions)
+        - correctAnswer: The correct answer (for multiple_choice) or a model answer (for open_ended)
+        - explanation: An explanation of why the answer is correct
+        - difficulty: "easy", "medium", or "hard"
+    `;
+
+    const userPrompt = `
+      Create a quiz to test understanding of the topic: ${topic}.
+      
+      Based on this explanation:
+      ${explanation}
+      
+      Create 5 questions: 3 multiple choice and 2 open-ended.
+      Make sure questions cover different aspects of the topic and vary in difficulty.
+    `;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 2000
+    });
+
+    // Parse the AI response
+    const quizText = completion.choices[0].message.content || '{}';
+    const quiz = JSON.parse(quizText);
+
+    // Store quiz in database
+    const { data: quizData, error: quizError } = await supabaseClient
+      .from('quizzes')
+      .insert({
+        note_id: noteId,
+        topic: topic,
+        introduction: quiz.introduction || `Quiz on ${topic}`,
+        questions: quiz.questions || []
+      })
+      .select()
+      .single();
+
+    if (quizError) {
+      console.error("Error storing quiz:", quizError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to store quiz' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
+    // Return the quiz
+    return new Response(
+      JSON.stringify({
+        introduction: quiz.introduction,
+        questions: quiz.questions
       }),
-    });
-    
-    const result = await response.json();
-    let quiz: QuizResponse;
-    
-    if (result.error) {
-      console.error('OpenRouter API error:', result.error);
-      return new Response(JSON.stringify({ error: 'Error generating quiz' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
-    
-    try {
-      // Parse the LLM response
-      const content = result.choices[0].message.content;
-      quiz = JSON.parse(content);
-      
-      // Store the quiz in Supabase
-      const { data, error } = await supabaseClient
-        .from('quizzes')
-        .upsert({
-          note_id: requestData.noteId,
-          topic: requestData.topic,
-          questions: quiz.questions,
-          introduction: quiz.introduction,
-          created_at: new Date().toISOString()
-        })
-        .select();
-      
-      if (error) {
-        console.error('Error storing quiz:', error);
-      }
-    } catch (e) {
-      console.error('Error parsing LLM response:', e);
-      return new Response(JSON.stringify({ error: 'Error processing quiz response' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
-    
-    return new Response(JSON.stringify(quiz), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-    
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Unexpected error:', error);
-    return new Response(JSON.stringify({ error: 'An unexpected error occurred' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
+    console.error("Error in generate-quiz function:", error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
   }
 });

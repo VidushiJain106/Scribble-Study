@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Explanation } from "@/types";
-import { HelpCircle, Lightbulb } from "lucide-react";
+import { ArrowLeft, HelpCircle, Lightbulb } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -42,12 +42,28 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
     return [String(content)];
   };
   
+  // Function to navigate back to the note
+  const handleBackToNote = () => {
+    navigate(`/note/${explanation.noteId}`);
+  };
+  
   return (
     <div className="container max-w-4xl mx-auto py-6 px-4">
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">{explanation.content.title}</h1>
-          <p className="text-muted-foreground">Created from your notes on {explanation.topic}</p>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleBackToNote}
+            className="rounded-full"
+            aria-label="Back to note"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold mb-2">{explanation.content.title}</h1>
+            <p className="text-muted-foreground">Created from your notes on {explanation.topic}</p>
+          </div>
         </div>
         <Button
           onClick={onTakeQuiz}

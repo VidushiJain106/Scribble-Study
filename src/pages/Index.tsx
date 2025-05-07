@@ -1,3 +1,4 @@
+
 import { NoteList } from "@/components/Dashboard/NoteList";
 import { Sidebar } from "@/components/Dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Menu, PenLine, Plus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Create a component for the floating trigger that will be conditionally rendered
 const FloatingSidebarTrigger = () => {
@@ -28,10 +30,19 @@ const Index = () => {
   console.log("Index component rendering");
   
   const createNote = useNoteStore(state => state.createNote);
+  const fetchNotes = useNoteStore(state => state.fetchNotes);
+  const isLoading = useNoteStore(state => state.isLoading);
   const categoryItems = useCategoryStore(state => state.categoryItems);
+  const fetchCategories = useCategoryStore(state => state.fetchCategories);
   const navigate = useNavigate();
   
   const { category } = useParams<{ category?: string }>();
+  
+  // Fetch notes and categories when component mounts
+  useEffect(() => {
+    fetchNotes();
+    fetchCategories();
+  }, [fetchNotes, fetchCategories]);
   
   // Debug log
   useEffect(() => {
@@ -100,7 +111,15 @@ const Index = () => {
           )}
           
           <ErrorBoundary>
-            <NoteList category={category as NoteCategory | undefined} />
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Array(6).fill(0).map((_, index) => (
+                  <Skeleton key={index} className="h-64 rounded-lg" />
+                ))}
+              </div>
+            ) : (
+              <NoteList category={category as NoteCategory | undefined} />
+            )}
           </ErrorBoundary>
         </main>
       </div>

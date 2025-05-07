@@ -1,171 +1,107 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.3";
+import { OpenAI } from "https://esm.sh/openai@4.36.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface NoteData {
-  id: string;
-  title: string;
-  content: string;
-  category?: string;
-}
-
-interface AnalysisResponse {
-  concepts: string[];
-  mainTopic: string;
-  readyForExplanation: boolean;
-  suggestedActions?: string[];
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: corsHeaders,
-      status: 204,
-    });
+    return new Response(null, { headers: corsHeaders });
   }
   
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'No authorization header provided' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      });
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
-    const apiKey = Deno.env.get('OPENROUTER_API_KEY');
-    
-    if (!apiKey) {
-      console.error('API key not configured');
-      return new Response(JSON.stringify({ 
-        error: 'API key not configured',
-        concepts: ['Sample concept 1', 'Sample concept 2'],
-        mainTopic: 'Sample Topic',
-        readyForExplanation: true
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200, // Return fake data for development instead of error
-      });
-    }
-    
-    // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-    
-    // Parse request data
-    const { note } = await req.json() as { note: NoteData };
-    
-    if (!note || !note.content) {
-      return new Response(JSON.stringify({ error: 'Invalid note data provided' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
+
+    // Set up OpenAI client
+    const openai = new OpenAI({
+      apiKey: Deno.env.get('OPENAI_API_KEY'),
+    });
+
+    // Get request body
+    const requestData = await req.json();
+    const { note } = requestData;
+
+    if (!note || !note.id || !note.content) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request: note data is required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
-    
-    console.log(`Analyzing note: ${note.title}`);
-    
-    // Call OpenRouter API
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': Deno.env.get('APP_URL') || 'https://localhost:3000',
-        'X-Title': 'ScribbleSnap Note Analysis'
-      },
-      body: JSON.stringify({
-        model: 'openai/gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system', 
-            content: 'You are an educational AI that analyzes student notes. Extract key academic concepts from student notes. Identify if there\'s enough content for a detailed explanation. Return a JSON response with: concepts (array of key academic concepts), mainTopic (single most important topic), readyForExplanation (boolean indicating if there\'s enough content for explanation).'
-          },
-          {
-            role: 'user',
-            content: `Please analyze these notes:\n\nTitle: ${note.title}\n\nContent:\n${note.content}`
-          }
-        ],
-        response_format: { type: 'json_object' }
+
+    // Check content length - don't analyze if too short
+    if (note.content.length < 30) {
+      return new Response(
+        JSON.stringify({ 
+          mainTopic: "Not enough content",
+          concepts: [],
+          readyForExplanation: false
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Analyze the note with AI
+    const systemPrompt = `
+      You are an educational assistant that analyzes student notes.
+      Extract the main topic and key concepts from the provided notes.
+      Format your response as valid JSON with the fields:
+      - mainTopic: The primary subject of the notes (1-3 words)
+      - concepts: An array of key concepts mentioned (3-5 items)
+    `;
+
+    const userPrompt = `Analyze these notes and extract the main topic and key concepts:\n\n${note.content}`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      response_format: { type: "json_object" }
+    });
+
+    // Parse the AI response
+    const analysisText = completion.choices[0].message.content || '{}';
+    const analysis = JSON.parse(analysisText);
+
+    // Store analysis in database
+    const { data: analysisData, error: analysisError } = await supabaseClient
+      .from('note_analyses')
+      .upsert({
+        note_id: note.id,
+        main_topic: analysis.mainTopic || "Unknown Topic",
+        concepts: analysis.concepts || [],
+        ready_for_explanation: note.content.length > 100
+      })
+      .select()
+      .single();
+
+    if (analysisError) {
+      console.error("Error storing analysis:", analysisError);
+    }
+
+    // Return analysis with additional ready_for_explanation flag
+    return new Response(
+      JSON.stringify({
+        mainTopic: analysis.mainTopic,
+        concepts: analysis.concepts,
+        readyForExplanation: note.content.length > 100
       }),
-    });
-    
-    const result = await response.json();
-    let analysis: AnalysisResponse;
-    
-    if (result.error) {
-      console.error('OpenRouter API error:', result.error);
-      // Provide fallback analysis for development/testing
-      analysis = {
-        concepts: ['Concept 1', 'Concept 2', 'Concept 3'],
-        mainTopic: note.title || 'General Topic',
-        readyForExplanation: true
-      };
-    } else {
-      try {
-        // Parse the LLM response
-        const content = result.choices[0].message.content;
-        analysis = JSON.parse(content);
-      } catch (e) {
-        console.error('Error parsing LLM response:', e);
-        // Fallback data
-        analysis = {
-          concepts: ['Parsing Error', 'Review Content'],
-          mainTopic: note.title || 'Unknown Topic',
-          readyForExplanation: true
-        };
-      }
-    }
-    
-    // Ensure analysis has all required fields
-    analysis.concepts = analysis.concepts || [];
-    analysis.mainTopic = analysis.mainTopic || note.title || 'Topic';
-    analysis.readyForExplanation = analysis.readyForExplanation !== undefined ? analysis.readyForExplanation : true;
-    
-    try {
-      // Store the analysis in Supabase
-      const { error } = await supabaseClient
-        .from('note_analyses')
-        .upsert({
-          note_id: note.id,
-          main_topic: analysis.mainTopic,
-          concepts: analysis.concepts,
-          ready_for_explanation: analysis.readyForExplanation,
-          created_at: new Date().toISOString()
-        });
-      
-      if (error) {
-        console.error('Error storing analysis:', error);
-      }
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-    }
-    
-    return new Response(JSON.stringify(analysis), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-    
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Unexpected error:', error);
-    // Return a safe fallback response
-    return new Response(JSON.stringify({ 
-      error: 'An unexpected error occurred',
-      concepts: ['Error Processing', 'Try Again Later'],
-      mainTopic: 'Error Analysis',
-      readyForExplanation: false
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200, // Return status 200 with fallback data instead of error
-    });
+    console.error("Error in analyze-note function:", error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
   }
 });

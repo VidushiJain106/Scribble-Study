@@ -1,12 +1,15 @@
 
 import { create } from 'zustand';
 import { CategoryItem } from '@/types';
+import * as categoryService from '@/services/categoryService';
 
 interface CategoryState {
   categories: string[];
   categoryItems: CategoryItem[];
+  isLoading: boolean;
   
   // Actions
+  fetchCategories: () => Promise<void>;
   createCategory: (category: string, parent?: string) => void;
   deleteCategory: (category: string) => void;
 }
@@ -29,8 +32,41 @@ export const useCategoryStore = create<CategoryState>((set) => ({
     { name: 'Grammar', parent: 'English' },
     { name: 'Vocabulary', parent: 'English' }
   ],
+  isLoading: false,
+  
+  fetchCategories: async () => {
+    set({ isLoading: true });
+    
+    try {
+      const { data, error } = await categoryService.getCategories();
+      
+      if (error) {
+        console.error("Error fetching categories:", error);
+        set({ isLoading: false });
+        return;
+      }
+      
+      if (data) {
+        // Extract category names
+        const categoryNames = data.map(cat => cat.name);
+        
+        // Convert to categoryItems format
+        const categoryItems = categoryService.convertDbCategoriesToCategoryItems(data);
+        
+        set({ 
+          categories: categoryNames,
+          categoryItems: categoryItems,
+          isLoading: false 
+        });
+      }
+    } catch (error) {
+      console.error("Error in fetchCategories:", error);
+      set({ isLoading: false });
+    }
+  },
   
   createCategory: (category: string, parent?: string) => {
+    // Optimistic update
     set(state => {
       // Check if category already exists (case insensitive)
       const categoryExists = state.categories.some(
@@ -70,9 +106,18 @@ export const useCategoryStore = create<CategoryState>((set) => ({
         categoryItems: newCategoryItems
       };
     });
+    
+    // Save to Supabase in background
+    categoryService.createCategory(category, parent).then(({ error }) => {
+      if (error) {
+        console.error("Error creating category in Supabase:", error);
+        // Toast notification would be added here
+      }
+    });
   },
   
   deleteCategory: (category: string) => {
+    // Optimistic update
     set(state => {
       // Get the category item
       const categoryItem = state.categoryItems.find(item => item.name === category);
@@ -105,6 +150,14 @@ export const useCategoryStore = create<CategoryState>((set) => ({
         categories: newCategories,
         categoryItems: newCategoryItems
       };
+    });
+    
+    // Delete from Supabase in background
+    categoryService.deleteCategory(category).then(({ error }) => {
+      if (error) {
+        console.error("Error deleting category from Supabase:", error);
+        // Toast notification would be added here
+      }
     });
   }
 }));
