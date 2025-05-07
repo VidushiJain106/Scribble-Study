@@ -53,13 +53,14 @@ const ExplanationPage = () => {
               .single();
             
             if (existingExplanation) {
+              // Ensure we properly type the response from Supabase
               return {
-                id: existingExplanation.id,
-                noteId: existingExplanation.note_id,
-                topic: existingExplanation.topic,
-                title: existingExplanation.title,
-                content: existingExplanation.content,
-                createdAt: new Date(existingExplanation.created_at)
+                id: existingExplanation.id as string,
+                noteId: existingExplanation.note_id as string,
+                topic: existingExplanation.topic as string,
+                title: existingExplanation.title as string,
+                content: existingExplanation.content as Explanation['content'],
+                createdAt: new Date(existingExplanation.created_at as string)
               };
             } else {
               // Generate a new explanation
@@ -94,7 +95,8 @@ const ExplanationPage = () => {
         );
         
         if (explanation) {
-          setExplanation(explanation);
+          // Explicitly cast to Explanation type to ensure type safety
+          setExplanation(explanation as Explanation);
         } else {
           toast({
             title: "Error",
@@ -142,13 +144,14 @@ const ExplanationPage = () => {
             .single();
           
           if (existingQuiz) {
+            // Ensure we properly type the response from Supabase
             return {
-              id: existingQuiz.id,
-              noteId: existingQuiz.note_id,
-              topic: existingQuiz.topic,
-              introduction: existingQuiz.introduction,
-              questions: existingQuiz.questions,
-              createdAt: new Date(existingQuiz.created_at)
+              id: existingQuiz.id as string,
+              noteId: existingQuiz.note_id as string,
+              topic: existingQuiz.topic as string,
+              introduction: existingQuiz.introduction as string,
+              questions: existingQuiz.questions as Quiz['questions'],
+              createdAt: new Date(existingQuiz.created_at as string)
             };
           } else if (explanation) {
             // Generate a new quiz
@@ -179,7 +182,8 @@ const ExplanationPage = () => {
       );
       
       if (quiz) {
-        setQuiz(quiz);
+        // Explicitly cast to Quiz type to ensure type safety
+        setQuiz(quiz as Quiz);
         setShowQuiz(true);
       } else {
         toast({
@@ -241,4 +245,3 @@ const ExplanationPage = () => {
 };
 
 export default ExplanationPage;
-
