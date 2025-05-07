@@ -157,7 +157,7 @@ export async function addAttachmentToNote(noteId: string, attachment: Omit<Attac
         name: attachment.name,
         type: attachment.type,
         url: attachment.url,
-        size: attachment.size || 0
+        size: attachment.size ?? 0 // Using nullish coalescing to provide a default of 0 if size is undefined
       })
       .select()
       .single();
