@@ -33,7 +33,7 @@ const ExplanationPage = () => {
     }
     
     fetchExplanation();
-  }, [noteId, note, navigate, fetchExplanation]);
+  }, [noteId, note, navigate]);
   
   const handleTakeQuiz = async () => {
     const quizData = await generateQuiz();

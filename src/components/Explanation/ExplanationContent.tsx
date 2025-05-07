@@ -1,7 +1,8 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Explanation } from "@/types";
-import { ArrowLeft, HelpCircle, Lightbulb } from "lucide-react";
+import { HelpCircle, Lightbulb } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -41,34 +42,25 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
     return [String(content)];
   };
   
-  // Function to go back to the original note
-  const handleBackToNote = () => {
-    if (explanation.noteId) {
-      navigate(`/note/${explanation.noteId}`);
-    }
-  };
-  
   return (
     <div className="container max-w-4xl mx-auto py-6 px-4">
-      <div className="flex items-center mb-8">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={handleBackToNote}
-          className="mr-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Note
-        </Button>
+      <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">{explanation.content.title}</h1>
           <p className="text-muted-foreground">Created from your notes on {explanation.topic}</p>
         </div>
+        <Button
+          onClick={onTakeQuiz}
+          className="fixed right-6 bottom-6 shadow-lg flex items-center gap-2 z-10 animate-pulse"
+        >
+          <HelpCircle className="h-5 w-5" />
+          Test Your Knowledge!
+        </Button>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="md:col-span-1 space-y-3">
-          <h2 className="mb-2 font-semibold text-lg">Sections</h2>
+          <h2 className="font-medium text-lg mb-3">Sections</h2>
           {explanation.content.sections.map((section, idx) => (
             <Button
               key={idx}
@@ -145,14 +137,6 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
           )}
         </div>
       </div>
-      
-      <Button
-        onClick={onTakeQuiz}
-        className="fixed right-6 bottom-6 shadow-lg flex items-center gap-2 z-10 animate-pulse"
-      >
-        <HelpCircle className="h-5 w-5" />
-        Test Your Knowledge!
-      </Button>
     </div>
   );
 }
