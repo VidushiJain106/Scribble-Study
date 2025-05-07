@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,9 @@ export function UserMenu() {
   }, [user]);
   
   const handleSignOut = async () => {
-    await signOut();
+    if (signOut) {
+      await signOut();
+    }
   };
 
   return (
@@ -80,7 +83,7 @@ export function UserMenu() {
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{fullName || "User"}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user?.email}
+              {user?.email || "guest@example.com"}
             </p>
           </div>
         </DropdownMenuLabel>
