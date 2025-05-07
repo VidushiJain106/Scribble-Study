@@ -2,9 +2,9 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Explanation } from "@/types";
-import { HelpCircle, Lightbulb } from "lucide-react";
+import { HelpCircle, Lightbulb, ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 interface ExplanationContentProps {
   explanation: Explanation;
@@ -14,6 +14,7 @@ interface ExplanationContentProps {
 export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationContentProps) {
   const [activeSection, setActiveSection] = useState<number | null>(null);
   const navigate = useNavigate();
+  const { id: noteId } = useParams<{ id: string }>();
   
   // Helper function to safely convert content to string and handle any format
   const formatContent = (content: any): string[] => {
@@ -42,10 +43,27 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
     return [String(content)];
   };
   
+  const handleReturnToNote = () => {
+    if (noteId) {
+      navigate(`/note/${noteId}`);
+    }
+  };
+  
   return (
     <div className="container max-w-4xl mx-auto py-6 px-4">
       <div className="flex items-center justify-between mb-8">
         <div>
+          <div className="flex items-center mb-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="mr-2 flex items-center gap-1" 
+              onClick={handleReturnToNote}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Note
+            </Button>
+          </div>
           <h1 className="text-3xl font-bold mb-2">{explanation.content.title}</h1>
           <p className="text-muted-foreground">Created from your notes on {explanation.topic}</p>
         </div>
