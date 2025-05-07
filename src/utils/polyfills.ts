@@ -6,7 +6,7 @@
 
 // URL.createObjectURL polyfill for browsers that might not support it
 if (typeof window !== 'undefined' && !window.URL) {
-  window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
+  window.URL = window.URL || window.webkitURL;
 }
 
 // Fetch API polyfill check
