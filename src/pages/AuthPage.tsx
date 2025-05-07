@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PenLine, Loader2 } from 'lucide-react';
+import { PenLine, Loader2, ArrowLeft } from 'lucide-react';
 
 const AuthPage: React.FC = () => {
   const { user, signIn, signUp, loading } = useAuth();
@@ -27,7 +27,7 @@ const AuthPage: React.FC = () => {
 
   // If user is already logged in, redirect to homepage
   if (user && !loading) {
-    return <Navigate to="/" />;
+    return <Navigate to="/app" />;
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -36,7 +36,7 @@ const AuthPage: React.FC = () => {
     try {
       const { error } = await signIn(loginEmail, loginPassword);
       if (!error) {
-        navigate('/');
+        navigate('/app');
       }
     } finally {
       setLoginLoading(false);
@@ -49,11 +49,15 @@ const AuthPage: React.FC = () => {
     try {
       const { error } = await signUp(signupEmail, signupPassword, { full_name: signupName });
       if (!error) {
-        navigate('/');
+        navigate('/app');
       }
     } finally {
       setSignupLoading(false);
     }
+  };
+
+  const goBack = () => {
+    navigate('/');
   };
 
   if (loading) {
@@ -172,6 +176,11 @@ const AuthPage: React.FC = () => {
               </form>
             )}
           </CardContent>
+          <CardFooter className="flex justify-center">
+            <Button variant="ghost" onClick={goBack} className="mt-2 flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" /> Back to Home
+            </Button>
+          </CardFooter>
         </Card>
       </div>
     </div>

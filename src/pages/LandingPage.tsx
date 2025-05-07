@@ -10,7 +10,14 @@ const LandingPage: React.FC = () => {
   const { user } = useAuth();
 
   const handleEnterApp = () => {
-    navigate('/app');
+    // If user is logged in, redirect to app, otherwise redirect to auth
+    if (user) {
+      console.log("User is logged in, redirecting to app");
+      navigate('/app');
+    } else {
+      console.log("User is not logged in, redirecting to auth");
+      navigate('/auth');
+    }
   };
 
   return (
