@@ -1,7 +1,7 @@
 
+import { useRef, useState, useEffect } from "react";
+import { DrawPath, PenSize, Shape, Tool } from "@/types";
 import { useNoteStore } from "@/lib/store";
-import { DrawPath, Point, Shape } from "@/types";
-import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 interface DrawingCanvasProps {
