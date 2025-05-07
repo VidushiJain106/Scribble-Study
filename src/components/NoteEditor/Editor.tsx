@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,8 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useNoteStore } from "@/lib/store";
+import { useChatStore } from "@/lib/chatStore";
 import { Attachment, DrawPath, Note } from "@/types";
-import { File, FileText, GraduationCap, HelpCircle, Image, Lightbulb, Pen, Save, Trash } from "lucide-react";
+import { File, FileText, GraduationCap, Image, Lightbulb, Pen, Save, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { FileUploader } from "./FileUploader";
@@ -17,12 +17,11 @@ import { FontFormatBar } from "./FontFormatBar";
 import { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "../ui/badge";
-import { useChatStore } from "@/lib/chatStore";
 import { createClient } from "@supabase/supabase-js";
 
 // Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface EditorProps {

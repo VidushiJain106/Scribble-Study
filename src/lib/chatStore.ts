@@ -5,8 +5,8 @@ import { ChatMessage, ChatMessageRole, ChatState, Note } from '@/types';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -63,13 +63,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
     addMessage("Analyzing your note...", "assistant");
     
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session) {
-        console.error("No authenticated session found");
-        addMessage("I need you to be signed in to analyze your notes.", "assistant");
+      // Check if we have a valid Supabase client
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.error("Missing Supabase configuration");
+        addMessage("I'm having trouble connecting to the backend. Please check your configuration.", "assistant");
         setLoading(false);
         return;
       }
+
+      // Log for debugging
+      console.log("Sending note for analysis:", note.id);
       
       const { data, error } = await supabase.functions.invoke('analyze-note', {
         body: { note },
@@ -83,9 +86,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
 
       // Process the analysis response
-      if (data.readyForExplanation) {
-        const mainTopic = data.mainTopic;
-        const concepts = data.concepts.slice(0, 3).join(", ");
+      if (data && data.readyForExplanation) {
+        const mainTopic = data.mainTopic || "your topic";
+        const concepts = (data.concepts || []).slice(0, 3).join(", ") || "various concepts";
         
         addMessage(
           `I analyzed your note on "${mainTopic}". I found interesting concepts like ${concepts}. You've written enough that I can provide a detailed explanation. Click on the "Explain!" button when it appears to learn more.`,
