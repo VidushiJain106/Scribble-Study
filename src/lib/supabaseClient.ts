@@ -2,23 +2,25 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Get environment variables for Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://hyykxbckbypxugsujcrz.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eWt4YmNrYnlweHVnc3VqY3J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2MzYyNDIsImV4cCI6MjA2MjIxMjI0Mn0.gPfir3ZSp-WfmSevNrsyK7f4Dm_6lVwBl1OPhyjJ5y8';
 
 // Create a typed supabase client
 let supabaseClient: ReturnType<typeof createClient> | null = null;
 
-// Only initialize if we have valid credentials
-if (supabaseUrl && supabaseAnonKey) {
-  try {
-    supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-    console.log("Supabase client initialized in utility file");
-  } catch (error) {
-    console.error("Failed to initialize Supabase client in utility:", error);
-    supabaseClient = null;
-  }
-} else {
-  console.warn("Supabase environment variables missing. Some functionality will be limited.");
+try {
+  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: localStorage,
+    }
+  });
+  console.log("Supabase client initialized in utility file");
+} catch (error) {
+  console.error("Failed to initialize Supabase client in utility:", error);
+  supabaseClient = null;
 }
 
 /**

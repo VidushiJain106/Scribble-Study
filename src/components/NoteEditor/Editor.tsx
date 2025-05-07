@@ -17,12 +17,7 @@ import { FontFormatBar } from "./FontFormatBar";
 import { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "../ui/badge";
-import { createClient } from "@supabase/supabase-js";
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabase } from "@/integrations/supabase/client";
 
 interface EditorProps {
   noteId: string;

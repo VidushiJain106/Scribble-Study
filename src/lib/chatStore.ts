@@ -2,27 +2,7 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage, ChatMessageRole, ChatState, Note } from '@/types';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client ONLY if environment variables are available
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-// Create a dummy client or real client based on whether we have credentials
-let supabase: ReturnType<typeof createClient> | null = null;
-
-// Only create the client if we have the required credentials
-if (supabaseUrl && supabaseAnonKey) {
-  try {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
-    console.log("Supabase client initialized successfully");
-  } catch (error) {
-    console.error("Failed to initialize Supabase client:", error);
-    supabase = null;
-  }
-} else {
-  console.warn("Supabase environment variables are missing. Supabase functionality will be limited.");
-}
+import { supabase } from '@/integrations/supabase/client';
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [
@@ -81,7 +61,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Check if we have a valid Supabase client
       if (!supabase) {
         console.warn("Supabase client not available. Providing fallback message.");
-        addMessage("I'm not connected to the backend yet. You'll need to connect to Supabase for full functionality. For now, I'll provide a simulated response.", "assistant");
+        addMessage("I'm not connected to the backend yet. For now, I'll provide a simulated response.", "assistant");
         
         // Simulate analysis response after a short delay
         setTimeout(() => {
@@ -105,41 +85,46 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Log for debugging
       console.log("Sending note for analysis:", note.id);
       
-      const { data, error } = await supabase.functions.invoke('analyze-note', {
-        body: { note },
-      });
+      try {
+        const { data, error } = await supabase.functions.invoke('analyze-note', {
+          body: { note },
+        });
 
-      if (error) {
-        console.error("Error analyzing note:", error);
+        if (error) {
+          console.error("Error analyzing note:", error);
+          addMessage("I encountered an error analyzing your note. Please try again later.", "assistant");
+          setLoading(false);
+          return;
+        }
+
+        // Process the analysis response
+        if (data && data.readyForExplanation) {
+          const mainTopic = data.mainTopic || "your topic";
+          const concepts = (data.concepts || []).slice(0, 3).join(", ") || "various concepts";
+          
+          addMessage(
+            `I analyzed your note on "${mainTopic}". I found interesting concepts like ${concepts}. You've written enough that I can provide a detailed explanation. Click on the "Explain!" button when it appears to learn more.`,
+            "assistant"
+          );
+          
+          // Store analysis with the note
+          note.analysis = {
+            noteId: note.id,
+            mainTopic: data.mainTopic,
+            concepts: data.concepts,
+            readyForExplanation: true,
+            createdAt: new Date()
+          };
+        } else {
+          // Not enough content for a full explanation
+          addMessage(
+            "Your note is still developing. Try adding more details or examples to get better insights.",
+            "assistant"
+          );
+        }
+      } catch (error) {
+        console.error("Error calling Supabase function:", error);
         addMessage("I encountered an error analyzing your note. Please try again later.", "assistant");
-        setLoading(false);
-        return;
-      }
-
-      // Process the analysis response
-      if (data && data.readyForExplanation) {
-        const mainTopic = data.mainTopic || "your topic";
-        const concepts = (data.concepts || []).slice(0, 3).join(", ") || "various concepts";
-        
-        addMessage(
-          `I analyzed your note on "${mainTopic}". I found interesting concepts like ${concepts}. You've written enough that I can provide a detailed explanation. Click on the "Explain!" button when it appears to learn more.`,
-          "assistant"
-        );
-        
-        // Store analysis with the note
-        note.analysis = {
-          noteId: note.id,
-          mainTopic: data.mainTopic,
-          concepts: data.concepts,
-          readyForExplanation: true,
-          createdAt: new Date()
-        };
-      } else {
-        // Not enough content for a full explanation
-        addMessage(
-          "Your note is still developing. Try adding more details or examples to get better insights.",
-          "assistant"
-        );
       }
     } catch (error) {
       console.error("Error in analyze note:", error);

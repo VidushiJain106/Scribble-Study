@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -43,15 +42,19 @@ export function UserMenu() {
     if (!user) return;
     
     const loadProfile = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('avatar_url, full_name')
-        .eq('id', user.id)
-        .single();
-        
-      if (data) {
-        setAvatarUrl(data.avatar_url);
-        setFullName(data.full_name);
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('avatar_url, full_name')
+          .eq('id', user.id)
+          .single();
+          
+        if (data) {
+          setAvatarUrl(data.avatar_url);
+          setFullName(data.full_name);
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
       }
     };
     
