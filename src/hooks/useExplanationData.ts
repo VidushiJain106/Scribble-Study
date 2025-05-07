@@ -1,112 +1,211 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { withSupabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { Explanation, Quiz } from "@/types";
-import { fetchExplanationData, isNoteReadyForExplanation } from "@/services/explanationService";
-import { fetchQuizData } from "@/services/quizService";
 
 /**
- * Hook for managing explanation and quiz data with improved error handling
+ * Hook for managing explanation and quiz data
  */
 export function useExplanationData(noteId: string | undefined, note: any) {
   const [explanation, setExplanation] = useState<Explanation | null>(null);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [lastAttemptTime, setLastAttemptTime] = useState<number | null>(null);
   const { toast } = useToast();
-
-  /**
-   * Reset the error state and last attempt time
-   */
-  const resetErrorState = () => {
-    setError(null);
-    setLastAttemptTime(null);
-  };
 
   /**
    * Fetch explanation data from Supabase or generate new one
    */
   const fetchExplanation = async () => {
-    if (!noteId || !isNoteReadyForExplanation(note)) {
+    if (!noteId || !note || !note.analysis || !note.analysis.readyForExplanation) {
       return null;
     }
 
     setLoading(true);
-    setError(null);
-    setLastAttemptTime(Date.now());
     
     try {
-      const explanationData = await fetchExplanationData(noteId, note);
-      setExplanation(explanationData);
-      return explanationData;
-    } catch (error: any) {
-      console.error("Error in fetchExplanation:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      if (!isSupabaseConfigured()) {
+        toast({
+          title: "Connection Error",
+          description: "Cannot connect to Supabase. Please try again later.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return null;
+      }
       
-      // Special handling for network errors
-      const isNetworkError = errorMessage.includes("Failed to fetch") || 
-                            errorMessage.includes("Network connection error");
+      // Use withSupabase helper to safely fetch or generate explanation
+      const explanation = await withSupabase(
+        async (supabase) => {
+          // First check if we have a stored explanation
+          const { data: existingExplanation } = await supabase
+            .from('explanations')
+            .select('*')
+            .eq('note_id', noteId)
+            .single();
+          
+          if (existingExplanation) {
+            // Ensure we properly type the response from Supabase
+            return {
+              id: existingExplanation.id as string,
+              noteId: existingExplanation.note_id as string,
+              topic: existingExplanation.topic as string,
+              title: existingExplanation.title as string,
+              content: existingExplanation.content as Explanation['content'],
+              createdAt: new Date(existingExplanation.created_at as string)
+            };
+          } else {
+            // Generate a new explanation
+            const { data, error } = await supabase.functions.invoke('generate-explanation', {
+              body: {
+                noteId,
+                topic: note.analysis.mainTopic,
+                concepts: note.analysis.concepts,
+                noteContent: note.content
+              },
+            });
+            
+            if (error) {
+              throw new Error(error.message);
+            }
+            
+            return {
+              noteId,
+              topic: note.analysis.mainTopic,
+              title: data.title,
+              content: {
+                title: data.title,
+                sections: data.sections,
+                summary: data.summary,
+                furtherResources: data.furtherResources
+              },
+              createdAt: new Date()
+            };
+          }
+        },
+        null
+      );
       
-      setError(errorMessage);
+      if (explanation) {
+        // Explicitly cast to Explanation type to ensure type safety
+        setExplanation(explanation as Explanation);
+        return explanation as Explanation;
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to get explanation. Please try again later.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching explanation:", error);
       toast({
-        title: "Error generating explanation",
-        description: isNetworkError 
-          ? "Network connection issue. Please check your internet and try again." 
-          : errorMessage,
+        title: "Error",
+        description: "An error occurred while fetching the explanation.",
         variant: "destructive",
       });
-      // Re-throw the error to be handled by the caller
-      throw error;
     } finally {
       setLoading(false);
     }
+    
+    return null;
   };
 
   /**
    * Generate or fetch quiz based on explanation
    */
   const generateQuiz = async () => {
-    if (!noteId || !explanation) return null;
+    if (!noteId || !explanation) return;
     
     setLoading(true);
-    setError(null);
     
     try {
-      const quizData = await fetchQuizData(noteId, explanation);
-      setQuiz(quizData);
-      return quizData;
-    } catch (error: any) {
-      console.error("Error in generateQuiz:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      if (!isSupabaseConfigured()) {
+        toast({
+          title: "Connection Error",
+          description: "Cannot connect to Supabase. Please try again later.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
       
-      setError(errorMessage);
+      // Use withSupabase helper to safely fetch or generate quiz
+      const quiz = await withSupabase(
+        async (supabase) => {
+          // Check if we have a stored quiz
+          const { data: existingQuiz } = await supabase
+            .from('quizzes')
+            .select('*')
+            .eq('note_id', noteId)
+            .single();
+          
+          if (existingQuiz) {
+            // Ensure we properly type the response from Supabase
+            return {
+              id: existingQuiz.id as string,
+              noteId: existingQuiz.note_id as string,
+              topic: existingQuiz.topic as string,
+              introduction: existingQuiz.introduction as string,
+              questions: existingQuiz.questions as Quiz['questions'],
+              createdAt: new Date(existingQuiz.created_at as string)
+            };
+          } else {
+            // Generate a new quiz
+            const { data, error } = await supabase.functions.invoke('generate-quiz', {
+              body: {
+                noteId,
+                topic: explanation.topic,
+                explanation: JSON.stringify(explanation.content)
+              },
+            });
+            
+            if (error) {
+              throw new Error(error.message);
+            }
+            
+            return {
+              noteId,
+              topic: explanation.topic,
+              introduction: data.introduction,
+              questions: data.questions,
+              createdAt: new Date()
+            };
+          }
+        },
+        null
+      );
+      
+      if (quiz) {
+        // Explicitly cast to Quiz type to ensure type safety
+        setQuiz(quiz as Quiz);
+        return quiz as Quiz;
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to generate quiz. Please try again later.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching quiz:", error);
       toast({
-        title: "Error generating quiz",
-        description: errorMessage,
+        title: "Error",
+        description: "An error occurred while generating the quiz.",
         variant: "destructive",
       });
-      // Re-throw the error to be handled by the caller
-      throw error;
     } finally {
       setLoading(false);
     }
+    
+    return null;
   };
-
-  // Check connection status when component mounts or when noteId changes
-  useEffect(() => {
-    // Reset error state when note or noteId changes
-    resetErrorState();
-  }, [noteId, note]);
 
   return {
     explanation,
     quiz,
     loading,
-    error,
-    lastAttemptTime,
     fetchExplanation,
     generateQuiz,
-    resetErrorState
   };
 }

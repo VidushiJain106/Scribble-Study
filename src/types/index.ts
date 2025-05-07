@@ -1,4 +1,3 @@
-
 export type NoteCategory = 
   | "personal"
   | "work"
@@ -42,7 +41,6 @@ export interface Attachment {
   name: string;
   type: "image" | "pdf";
   url: string;
-  size: number; // Ensuring size is a required property of number type
   thumbnailUrl?: string;
   createdAt: Date;
 }
