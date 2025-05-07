@@ -13,7 +13,11 @@ export const getSupabaseClient = () => supabaseIntegrationClient;
  * Check if Supabase is properly configured
  * @returns boolean indicating if Supabase is ready to use
  */
-export const isSupabaseConfigured = () => !!supabaseIntegrationClient;
+export const isSupabaseConfigured = () => {
+  const configured = !!supabaseIntegrationClient;
+  console.info("Supabase Configuration Check:", { isConfigured: configured ? "Yes" : "No" });
+  return configured;
+};
 
 /**
  * Helper to safely call Supabase functions

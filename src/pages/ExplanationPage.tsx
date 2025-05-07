@@ -27,8 +27,10 @@ const ExplanationPage = () => {
     quiz, 
     loading,
     error,
+    lastAttemptTime,
     fetchExplanation, 
-    generateQuiz 
+    generateQuiz,
+    resetErrorState
   } = useExplanationData(noteId, note);
   
   useEffect(() => {
@@ -61,6 +63,11 @@ const ExplanationPage = () => {
       return;
     }
     
+    // Reset the error state when retrying
+    if (retryCount > 0) {
+      resetErrorState();
+    }
+    
     // Fetch explanation with error handling
     const loadExplanation = async () => {
       console.log("Loading explanation for note:", noteId);
@@ -69,16 +76,12 @@ const ExplanationPage = () => {
         console.log("Explanation loaded successfully");
       } catch (err) {
         console.error("Failed to load explanation:", err);
-        toast({
-          title: "Explanation Error",
-          description: "There was a problem loading the explanation. Please try again.",
-          variant: "destructive"
-        });
+        // Toast is already shown in useExplanationData hook
       }
     };
     
     loadExplanation();
-  }, [noteId, note, navigate, fetchExplanation, toast, retryCount]);
+  }, [noteId, note, navigate, fetchExplanation, toast, retryCount, resetErrorState]);
   
   const handleTakeQuiz = async () => {
     try {
@@ -90,11 +93,7 @@ const ExplanationPage = () => {
       }
     } catch (err) {
       console.error("Quiz generation error:", err);
-      toast({
-        title: "Quiz Error",
-        description: "Failed to generate quiz. Please try again later.",
-        variant: "destructive"
-      });
+      // Toast is already shown in useExplanationData hook
     }
   };
   
@@ -126,7 +125,16 @@ const ExplanationPage = () => {
   // Show general error if there was a problem loading the explanation
   if (error) {
     console.log("Showing error UI due to error:", error);
-    return <ExplanationError errorType="generic" noteId={noteId} onRetry={handleRetry} />;
+    const isNetworkError = error.includes("Failed to fetch") || error.includes("Network connection");
+    
+    return (
+      <ExplanationError 
+        errorType={isNetworkError ? "network" : "generic"} 
+        noteId={noteId} 
+        onRetry={handleRetry} 
+        lastAttemptTime={lastAttemptTime}
+      />
+    );
   }
   
   // Show not ready error if explanation couldn't be generated
