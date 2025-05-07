@@ -46,21 +46,23 @@ serve(async (req) => {
       );
     }
 
-    // Generate explanation with AI using direct OpenAI API call
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not found');
+    // Generate explanation with AI using OpenRouter API
+    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+    if (!openRouterApiKey) {
+      throw new Error('OpenRouter API key not found');
     }
 
-    // Call OpenAI API directly using fetch
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Call OpenRouter API directly using fetch
+    const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`
+        'Authorization': `Bearer ${openRouterApiKey}`,
+        'HTTP-Referer': Deno.env.get('APP_URL') || 'https://localhost:3000',
+        'X-Title': 'ScribbleSnap Explanation Generation'
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: 'openai/gpt-3.5-turbo',
         messages: [
           {
             role: "system", 
@@ -90,14 +92,14 @@ serve(async (req) => {
       })
     });
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      console.error("OpenAI API error:", errorText);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    if (!openRouterResponse.ok) {
+      const errorText = await openRouterResponse.text();
+      console.error("OpenRouter API error:", errorText);
+      throw new Error(`OpenRouter API error: ${openRouterResponse.status}`);
     }
 
     // Parse the AI response
-    const responseData = await openaiResponse.json();
+    const responseData = await openRouterResponse.json();
     const analysisText = responseData.choices[0].message?.content || '{}';
     
     console.log("Raw explanation text:", analysisText);
