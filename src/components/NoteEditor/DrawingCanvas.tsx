@@ -5,10 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 interface DrawingCanvasProps {
-  onDrawingComplete: (paths: DrawPath[]) => void;
+  onComplete: (paths: DrawPath[]) => void;
 }
 
-export function DrawingCanvas({ onDrawingComplete }: DrawingCanvasProps) {
+export function DrawingCanvas({ onComplete }: DrawingCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const tempCanvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -385,7 +385,7 @@ export function DrawingCanvas({ onDrawingComplete }: DrawingCanvasProps) {
   
   const saveDrawing = () => {
     if (paths.length === 0) return;
-    onDrawingComplete(paths);
+    onComplete(paths);
     // Don't clear the canvas to let the user continue editing
   };
   
