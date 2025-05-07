@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -11,7 +12,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 
 export function Sidebar() {
   const navigate = useNavigate();
-  const { close } = useSidebar();
+  const { setOpenMobile } = useSidebar();
   const createNote = useNoteStore(state => state.createNote);
   const createCategory = useCategoryStore(state => state.createCategory);
   const categories = useCategoryStore(state => state.categories);
@@ -27,7 +28,7 @@ export function Sidebar() {
   
   const handleCategoryClick = (category: string) => {
     navigate(`/?category=${category}`);
-    close();
+    setOpenMobile(false); // Close the sidebar on mobile when clicking a category
   };
 
   return (
@@ -38,7 +39,7 @@ export function Sidebar() {
           className="justify-start w-full mb-4"
           onClick={() => {
             navigate("/");
-            close();
+            setOpenMobile(false); // Close the sidebar on mobile when clicking home
           }}
         >
           ScribbleSnap
@@ -71,7 +72,7 @@ export function Sidebar() {
           className="justify-start w-full"
           onClick={() => {
             navigate("/");
-            close();
+            setOpenMobile(false); // Close the sidebar on mobile when clicking All Notes
           }}
         >
           All Notes
