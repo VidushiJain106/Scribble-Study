@@ -14,6 +14,10 @@ import ExamPrepPage from "./pages/ExamPrepPage";
 import ExplanationPage from "./pages/ExplanationPage";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useEffect } from "react";
+import { AuthProvider } from "./contexts/AuthContext";
+import AuthPage from "./pages/AuthPage";
+import ProfilePage from "./pages/ProfilePage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Add console logging for debugging Supabase environment variables
 console.log("Supabase Environment Check:", {
@@ -60,59 +64,90 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <ErrorBoundary>
-            <BrowserRouter>
-              <ErrorBoundary>
-                <Routes>
-                  <Route path="/" element={
-                    <ErrorBoundary>
-                      <Index />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/category/:category" element={
-                    <ErrorBoundary>
-                      <Index />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/note/:id" element={
-                    <ErrorBoundary>
-                      <NotePage />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/note/:id/explanation" element={
-                    <ErrorBoundary>
-                      <ExplanationPage />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/focus" element={
-                    <ErrorBoundary>
-                      <FocusMode />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/documents" element={
-                    <ErrorBoundary>
-                      <DocumentsPage />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/exam-prep" element={
-                    <ErrorBoundary>
-                      <ExamPrepPage />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="*" element={
-                    <ErrorBoundary>
-                      <NotFound />
-                    </ErrorBoundary>
-                  } />
-                </Routes>
+          <AuthProvider>
+            <ErrorBoundary>
+              <BrowserRouter>
                 <ErrorBoundary>
-                  <Chatbot />
+                  <Routes>
+                    {/* Public routes */}
+                    <Route path="/auth" element={
+                      <ErrorBoundary>
+                        <AuthPage />
+                      </ErrorBoundary>
+                    } />
+                    
+                    {/* Protected routes */}
+                    <Route path="/" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <Index />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/category/:category" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <Index />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/note/:id" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <NotePage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/note/:id/explanation" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <ExplanationPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/focus" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <FocusMode />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/documents" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <DocumentsPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/exam-prep" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <ExamPrepPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/profile" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <ProfilePage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="*" element={
+                      <ErrorBoundary>
+                        <NotFound />
+                      </ErrorBoundary>
+                    } />
+                  </Routes>
+                  <ErrorBoundary>
+                    <Chatbot />
+                  </ErrorBoundary>
+                  <Toaster />
+                  <Sonner />
                 </ErrorBoundary>
-                <Toaster />
-                <Sonner />
-              </ErrorBoundary>
-            </BrowserRouter>
-          </ErrorBoundary>
+              </BrowserRouter>
+            </ErrorBoundary>
+          </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
