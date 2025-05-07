@@ -27,7 +27,7 @@ export function Sidebar() {
   };
   
   const handleCategoryClick = (category: string) => {
-    navigate(`/app/category/${category}`);
+    navigate(`/?category=${category}`);
     setOpenMobile(false); // Close the sidebar on mobile when clicking a category
   };
 
@@ -43,7 +43,7 @@ export function Sidebar() {
           variant="ghost" 
           className="justify-start w-full mb-4"
           onClick={() => {
-            navigate("/app");
+            navigate("/");
             setOpenMobile(false);
           }}
         >
@@ -75,7 +75,7 @@ export function Sidebar() {
         <Button 
           variant="ghost" 
           className="justify-start w-full mb-2 flex items-center gap-2"
-          onClick={() => handleNavigate("/app")}
+          onClick={() => handleNavigate("/")}
         >
           <FileText className="h-4 w-4" />
           All Notes
