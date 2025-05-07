@@ -2,9 +2,17 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { PenLine, ArrowRight } from "lucide-react";
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LandingPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleEnterApp = () => {
+    navigate('/app');
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-muted p-4">
       <div className="max-w-3xl w-full text-center space-y-6">
@@ -21,10 +29,12 @@ const LandingPage: React.FC = () => {
         </p>
         
         <div className="pt-6">
-          <Button asChild size="lg" className="text-lg px-8 py-6 rounded-full">
-            <Link to="/app" className="flex items-center gap-2">
-              Enter App <ArrowRight className="h-5 w-5 ml-2" />
-            </Link>
+          <Button 
+            onClick={handleEnterApp}
+            size="lg" 
+            className="text-lg px-8 py-6 rounded-full"
+          >
+            Enter App <ArrowRight className="h-5 w-5 ml-2" />
           </Button>
         </div>
         
