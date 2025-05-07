@@ -18,9 +18,11 @@ import { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "../ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+
 interface EditorProps {
   noteId: string;
 }
+
 export function Editor({
   noteId
 }: EditorProps) {
@@ -180,9 +182,17 @@ export function Editor({
           </TabsList>
         </div>
         
-        <TabsContent value="text" className="flex-1 p-4 overflow-auto py-0">
+        <TabsContent value="text" className="flex-1 flex flex-col p-4 pt-0 overflow-hidden">
           <FontFormatBar onFormatChange={handleFormatChange} />
-          <Textarea value={content} onChange={e => setContent(e.target.value)} className="min-h-[200px] resize-none border-none focus-visible:ring-0 p-0" placeholder="Start writing your note..." style={textFormatting} />
+          <div className="flex-1 flex flex-col overflow-auto">
+            <Textarea 
+              value={content} 
+              onChange={e => setContent(e.target.value)} 
+              className="flex-1 min-h-0 resize-none border-none focus-visible:ring-0 p-0" 
+              placeholder="Start writing your note..." 
+              style={textFormatting} 
+            />
+          </div>
           
           {note.attachments && note.attachments.length > 0 && <div className="mt-4">
               <h3 className="text-sm font-medium mb-2">Attachments</h3>
