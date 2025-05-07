@@ -4,23 +4,27 @@ import { useEffect, useState } from "react";
 import { useNoteStore } from "@/lib/store";
 import { ExplanationContent } from "@/components/Explanation/ExplanationContent";
 import { QuizContent } from "@/components/Quiz/QuizContent";
-import { Explanation, Quiz } from "@/types";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { withSupabase, getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
-import { useToast } from "@/hooks/use-toast";
+import { ExplanationLoading } from "@/components/Explanation/ExplanationLoading"; 
+import { ExplanationError } from "@/components/Explanation/ExplanationError";
+import { useExplanationData } from "@/hooks/useExplanationData";
 
+/**
+ * Page component for displaying explanations and quizzes
+ */
 const ExplanationPage = () => {
   const { id: noteId } = useParams<{ id: string }>();
   const notes = useNoteStore(state => state.notes);
   const navigate = useNavigate();
-  const [explanation, setExplanation] = useState<Explanation | null>(null);
-  const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [showQuiz, setShowQuiz] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   
   const note = noteId ? notes.find(n => n.id === noteId) : null;
+  const { 
+    explanation, 
+    quiz, 
+    loading,
+    fetchExplanation, 
+    generateQuiz 
+  } = useExplanationData(noteId, note);
   
   useEffect(() => {
     if (!note || !note.analysis || !note.analysis.readyForExplanation) {
@@ -28,179 +32,13 @@ const ExplanationPage = () => {
       return;
     }
     
-    const fetchExplanation = async () => {
-      setLoading(true);
-      
-      try {
-        if (!isSupabaseConfigured()) {
-          toast({
-            title: "Connection Error",
-            description: "Cannot connect to Supabase. Please try again later.",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-        
-        // Use withSupabase helper to safely fetch or generate explanation
-        const explanation = await withSupabase(
-          async (supabase) => {
-            // First check if we have a stored explanation
-            const { data: existingExplanation } = await supabase
-              .from('explanations')
-              .select('*')
-              .eq('note_id', noteId)
-              .single();
-            
-            if (existingExplanation) {
-              // Ensure we properly type the response from Supabase
-              return {
-                id: existingExplanation.id as string,
-                noteId: existingExplanation.note_id as string,
-                topic: existingExplanation.topic as string,
-                title: existingExplanation.title as string,
-                content: existingExplanation.content as Explanation['content'],
-                createdAt: new Date(existingExplanation.created_at as string)
-              };
-            } else {
-              // Generate a new explanation
-              const { data, error } = await supabase.functions.invoke('generate-explanation', {
-                body: {
-                  noteId,
-                  topic: note.analysis.mainTopic,
-                  concepts: note.analysis.concepts,
-                  noteContent: note.content
-                },
-              });
-              
-              if (error) {
-                throw new Error(error.message);
-              }
-              
-              return {
-                noteId,
-                topic: note.analysis.mainTopic,
-                title: data.title,
-                content: {
-                  title: data.title,
-                  sections: data.sections,
-                  summary: data.summary,
-                  furtherResources: data.furtherResources
-                },
-                createdAt: new Date()
-              };
-            }
-          },
-          null
-        );
-        
-        if (explanation) {
-          // Explicitly cast to Explanation type to ensure type safety
-          setExplanation(explanation as Explanation);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to get explanation. Please try again later.",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching explanation:", error);
-        toast({
-          title: "Error",
-          description: "An error occurred while fetching the explanation.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchExplanation();
-  }, [noteId, note, navigate, toast]);
+  }, [noteId, note, navigate]);
   
   const handleTakeQuiz = async () => {
-    setLoading(true);
-    
-    try {
-      if (!isSupabaseConfigured()) {
-        toast({
-          title: "Connection Error",
-          description: "Cannot connect to Supabase. Please try again later.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-      
-      // Use withSupabase helper to safely fetch or generate quiz
-      const quiz = await withSupabase(
-        async (supabase) => {
-          // Check if we have a stored quiz
-          const { data: existingQuiz } = await supabase
-            .from('quizzes')
-            .select('*')
-            .eq('note_id', noteId)
-            .single();
-          
-          if (existingQuiz) {
-            // Ensure we properly type the response from Supabase
-            return {
-              id: existingQuiz.id as string,
-              noteId: existingQuiz.note_id as string,
-              topic: existingQuiz.topic as string,
-              introduction: existingQuiz.introduction as string,
-              questions: existingQuiz.questions as Quiz['questions'],
-              createdAt: new Date(existingQuiz.created_at as string)
-            };
-          } else if (explanation) {
-            // Generate a new quiz
-            const { data, error } = await supabase.functions.invoke('generate-quiz', {
-              body: {
-                noteId,
-                topic: explanation.topic,
-                explanation: JSON.stringify(explanation.content)
-              },
-            });
-            
-            if (error) {
-              throw new Error(error.message);
-            }
-            
-            return {
-              noteId,
-              topic: explanation.topic,
-              introduction: data.introduction,
-              questions: data.questions,
-              createdAt: new Date()
-            };
-          }
-          
-          return null;
-        },
-        null
-      );
-      
-      if (quiz) {
-        // Explicitly cast to Quiz type to ensure type safety
-        setQuiz(quiz as Quiz);
-        setShowQuiz(true);
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to generate quiz. Please try again later.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching quiz:", error);
-      toast({
-        title: "Error",
-        description: "An error occurred while generating the quiz.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    const quizData = await generateQuiz();
+    if (quizData) {
+      setShowQuiz(true);
     }
   };
   
@@ -209,28 +47,11 @@ const ExplanationPage = () => {
   };
   
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-          <p className="text-lg font-medium">
-            {explanation ? "Generating quiz questions..." : "Creating your explanation..."}
-          </p>
-        </div>
-      </div>
-    );
+    return <ExplanationLoading isGeneratingQuiz={showQuiz && !quiz} />;
   }
   
   if (!note || !explanation) {
-    return (
-      <div className="container max-w-3xl mx-auto py-12 px-4 text-center">
-        <h1 className="text-2xl font-bold mb-4">Note not found or not ready for explanation</h1>
-        <Button onClick={() => navigate('/')} className="flex items-center gap-1">
-          <ArrowLeft className="h-4 w-4" />
-          Return to notes
-        </Button>
-      </div>
-    );
+    return <ExplanationError />;
   }
   
   return showQuiz && quiz ? (
@@ -240,7 +61,10 @@ const ExplanationPage = () => {
       onBackToExplanation={() => setShowQuiz(false)}
     />
   ) : (
-    <ExplanationContent explanation={explanation} onTakeQuiz={handleTakeQuiz} />
+    <ExplanationContent 
+      explanation={explanation} 
+      onTakeQuiz={handleTakeQuiz} 
+    />
   );
 };
 
