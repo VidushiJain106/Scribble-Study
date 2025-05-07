@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Explanation, ExplanationSection } from "@/types";
+import { Explanation } from "@/types";
 import { HelpCircle, Lightbulb } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +14,33 @@ interface ExplanationContentProps {
 export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationContentProps) {
   const [activeSection, setActiveSection] = useState<number | null>(null);
   const navigate = useNavigate();
+  
+  // Helper function to safely convert content to string and handle any format
+  const formatContent = (content: any): string[] => {
+    if (!content) return ["No content available"];
+    
+    // If content is already a string, split by newlines
+    if (typeof content === 'string') {
+      return content.split('\n');
+    }
+    
+    // If content is an array, join it and then split by newlines
+    if (Array.isArray(content)) {
+      return content.join('\n').split('\n');
+    }
+    
+    // If content is an object, convert to string representation
+    if (typeof content === 'object') {
+      try {
+        return JSON.stringify(content, null, 2).split('\n');
+      } catch (e) {
+        return ["[Complex content structure]"];
+      }
+    }
+    
+    // Fallback for any other type
+    return [String(content)];
+  };
   
   return (
     <div className="container max-w-4xl mx-auto py-6 px-4">
@@ -53,7 +80,7 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
                 {explanation.content.sections[activeSection].title}
               </h2>
               <div className="prose max-w-none">
-                {explanation.content.sections[activeSection].content.split('\n').map((paragraph, idx) => (
+                {formatContent(explanation.content.sections[activeSection].content).map((paragraph, idx) => (
                   <p key={idx} className="mb-4">{paragraph}</p>
                 ))}
               </div>
@@ -68,9 +95,11 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
                   <div>
                     <h2 className="text-lg font-medium mb-2">Overview</h2>
                     <div className="prose max-w-none">
-                      {explanation.content.sections[0].content.split('\n').slice(0, 2).map((paragraph, idx) => (
-                        <p key={idx} className="mb-4">{paragraph}</p>
-                      ))}
+                      {explanation.content.sections[0] && formatContent(explanation.content.sections[0].content)
+                        .slice(0, 2)
+                        .map((paragraph, idx) => (
+                          <p key={idx} className="mb-4">{paragraph}</p>
+                        ))}
                     </div>
                     <Button
                       variant="outline"
@@ -90,7 +119,7 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
                   <Card key={idx} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveSection(idx + 1)}>
                     <h3 className="font-medium mb-2">{section.title}</h3>
                     <p className="text-sm text-muted-foreground line-clamp-3">
-                      {section.content.split('\n')[0]}
+                      {formatContent(section.content)[0]}
                     </p>
                   </Card>
                 ))}
@@ -99,7 +128,7 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
               <Card className="p-6 mt-6">
                 <h2 className="text-xl font-medium mb-4">Summary</h2>
                 <div className="prose max-w-none">
-                  {explanation.content.summary.split('\n').map((paragraph, idx) => (
+                  {formatContent(explanation.content.summary).map((paragraph, idx) => (
                     <p key={idx} className="mb-4">{paragraph}</p>
                   ))}
                 </div>
