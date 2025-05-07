@@ -1,5 +1,4 @@
-
-import { useNoteStore } from "@/lib/store";
+import { useDrawingStore } from "@/lib/drawingStore";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { 
@@ -11,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Droplets } from "lucide-react";
 
 export function OpacitySelector() {
-  const penOpacity = useNoteStore(state => state.penOpacity);
-  const setPenOpacity = useNoteStore(state => state.setPenOpacity);
+  const penOpacity = useDrawingStore(state => state.penOpacity);
+  const setPenOpacity = useDrawingStore(state => state.setPenOpacity);
   
   const handleOpacityChange = (value: number[]) => {
     setPenOpacity(value[0]);

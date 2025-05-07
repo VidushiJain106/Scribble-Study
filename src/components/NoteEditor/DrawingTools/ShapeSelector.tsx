@@ -1,5 +1,4 @@
-
-import { useNoteStore } from "@/lib/store";
+import { useDrawingStore } from "@/lib/drawingStore";
 import { Shape } from "@/types";
 import { Square, Circle, Minus, ArrowRight } from "lucide-react";
 import { 
@@ -11,8 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 export function ShapeSelector() {
-  const activeShape = useNoteStore(state => state.activeShape);
-  const setActiveShape = useNoteStore(state => state.setActiveShape);
+  const activeShape = useDrawingStore(state => state.activeShape);
+  const setActiveShape = useDrawingStore(state => state.setActiveShape);
   
   const shapes: { label: string; value: Shape; icon: React.ReactNode }[] = [
     { label: "Rectangle", value: "rectangle", icon: <Square className="h-4 w-4" /> },

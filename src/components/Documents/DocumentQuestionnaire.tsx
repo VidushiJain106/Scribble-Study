@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DocumentType, NoteCategory } from "@/types";
-import { useNoteStore } from "@/lib/store";
+import { useCategoryStore } from "@/lib/categoryStore";
 
 interface DocumentQuestionnaireProps {
   documentId: string;
@@ -18,8 +17,8 @@ export function DocumentQuestionnaire({ documentId, onComplete, completed }: Doc
   const [documentType, setDocumentType] = useState<DocumentType | undefined>(undefined);
   const [category, setCategory] = useState<NoteCategory | undefined>(undefined);
   
-  const categories = useNoteStore(state => state.categories);
-  const categoryItems = useNoteStore(state => state.categoryItems);
+  const categories = useCategoryStore(state => state.categories);
+  const categoryItems = useCategoryStore(state => state.categoryItems);
 
   if (completed) {
     return (

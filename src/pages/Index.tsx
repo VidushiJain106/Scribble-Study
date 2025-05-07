@@ -1,9 +1,9 @@
-
 import { NoteList } from "@/components/Dashboard/NoteList";
 import { Sidebar } from "@/components/Dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { useNoteStore } from "@/lib/store";
+import { useCategoryStore } from "@/lib/categoryStore";
 import { NoteCategory } from "@/types";
 import { Menu, PenLine, Plus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -28,7 +28,7 @@ const Index = () => {
   console.log("Index component rendering");
   
   const createNote = useNoteStore(state => state.createNote);
-  const categoryItems = useNoteStore(state => state.categoryItems);
+  const categoryItems = useCategoryStore(state => state.categoryItems);
   const navigate = useNavigate();
   
   const { category } = useParams<{ category?: string }>();

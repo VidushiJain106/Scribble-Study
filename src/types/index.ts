@@ -1,4 +1,3 @@
-
 export type NoteCategory = 
   | "personal"
   | "work"
@@ -60,6 +59,7 @@ export interface DrawPath {
   tool?: Tool | string; // Changed to allow string for shape types
 }
 
+// Ensuring Point interface is defined
 export interface Point {
   x: number;
   y: number;

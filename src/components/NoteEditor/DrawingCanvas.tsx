@@ -1,7 +1,6 @@
-
 import { useRef, useState, useEffect } from "react";
-import { DrawPath, PenSize, Shape, Tool } from "@/types";
-import { useNoteStore } from "@/lib/store";
+import { DrawPath, PenSize, Shape, Tool, Point } from "@/types";
+import { useDrawingStore } from "@/lib/drawingStore";
 import { Button } from "@/components/ui/button";
 
 interface DrawingCanvasProps {
@@ -15,13 +14,13 @@ export function DrawingCanvas({ onComplete }: DrawingCanvasProps) {
   const [currentPath, setCurrentPath] = useState<DrawPath | null>(null);
   const [startPoint, setStartPoint] = useState<Point | null>(null);
   
-  const activeTool = useNoteStore(state => state.activeTool);
-  const penColor = useNoteStore(state => state.penColor);
-  const penSize = useNoteStore(state => state.penSize);
-  const penOpacity = useNoteStore(state => state.penOpacity);
-  const activeShape = useNoteStore(state => state.activeShape);
-  const paths = useNoteStore(state => state.currentPaths);
-  const setIsDrawingStore = useNoteStore(state => state.setIsDrawing);
+  const activeTool = useDrawingStore(state => state.activeTool);
+  const penColor = useDrawingStore(state => state.penColor);
+  const penSize = useDrawingStore(state => state.penSize);
+  const penOpacity = useDrawingStore(state => state.penOpacity);
+  const activeShape = useDrawingStore(state => state.activeShape);
+  const paths = useDrawingStore(state => state.currentPaths);
+  const setIsDrawingStore = useDrawingStore(state => state.setIsDrawing);
   
   // Convert pen size to actual pixel width
   const getPenWidth = () => {
@@ -270,7 +269,7 @@ export function DrawingCanvas({ onComplete }: DrawingCanvasProps) {
     
     if (currentPath.points.length > 1 || activeTool === "shape") {
       // Add current path to paths
-      useNoteStore.setState(state => ({
+      useDrawingStore.setState(state => ({
         currentPaths: [...state.currentPaths, currentPath]
       }));
     }
@@ -380,7 +379,7 @@ export function DrawingCanvas({ onComplete }: DrawingCanvasProps) {
       tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
     }
     
-    useNoteStore.setState({ currentPaths: [] });
+    useDrawingStore.setState({ currentPaths: [] });
   };
   
   const saveDrawing = () => {

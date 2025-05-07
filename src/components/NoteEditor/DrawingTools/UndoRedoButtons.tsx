@@ -1,12 +1,11 @@
-
 import { Button } from "@/components/ui/button";
-import { useNoteStore } from "@/lib/store";
+import { useDrawingStore } from "@/lib/drawingStore";
 import { Undo2, Redo2 } from "lucide-react";
 
 export function UndoRedoButtons() {
-  const currentPaths = useNoteStore(state => state.currentPaths);
-  const undoDrawing = useNoteStore(state => state.undoDrawing);
-  const redoDrawing = useNoteStore(state => state.redoDrawing);
+  const paths = useDrawingStore(state => state.currentPaths);
+  const undoDrawing = useDrawingStore(state => state.undoDrawing);
+  const redoDrawing = useDrawingStore(state => state.redoDrawing);
   
   return (
     <div className="flex items-center gap-1">
@@ -14,7 +13,7 @@ export function UndoRedoButtons() {
         variant="ghost"
         size="icon"
         className="h-8 w-8"
-        disabled={currentPaths.length === 0}
+        disabled={paths.length === 0}
         onClick={undoDrawing}
         aria-label="Undo"
       >

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { 
   DropdownMenu,
@@ -6,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { useNoteStore } from "@/lib/store";
+import { useDrawingStore } from "@/lib/drawingStore";
 import { PenSize, Tool } from "@/types";
 import { 
   Eraser, 
@@ -24,13 +23,13 @@ import { UndoRedoButtons } from "./DrawingTools/UndoRedoButtons";
 import { Separator } from "@/components/ui/separator";
 
 export function ToolBar() {
-  const activeTool = useNoteStore(state => state.activeTool);
-  const penColor = useNoteStore(state => state.penColor);
-  const penSize = useNoteStore(state => state.penSize);
+  const activeTool = useDrawingStore(state => state.activeTool);
+  const penColor = useDrawingStore(state => state.penColor);
+  const penSize = useDrawingStore(state => state.penSize);
   
-  const setActiveTool = useNoteStore(state => state.setActiveTool);
-  const setPenColor = useNoteStore(state => state.setPenColor);
-  const setPenSize = useNoteStore(state => state.setPenSize);
+  const setActiveTool = useDrawingStore(state => state.setActiveTool);
+  const setPenColor = useDrawingStore(state => state.setPenColor);
+  const setPenSize = useDrawingStore(state => state.setPenSize);
   
   const toolIcons: Record<Tool, React.ReactNode> = {
     select: <MousePointer className="h-4 w-4" />,

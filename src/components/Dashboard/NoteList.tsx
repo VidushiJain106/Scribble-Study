@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNoteStore } from "@/lib/store";
+import { useCategoryStore } from "@/lib/categoryStore";
 import { Note } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { FileImage, Pen, Plus } from "lucide-react";
@@ -9,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 export function NoteList({ category }: { category?: string }) {
   const notes = useNoteStore(state => state.notes);
   const createNote = useNoteStore(state => state.createNote);
-  const categoryItems = useNoteStore(state => state.categoryItems);
+  const categoryItems = useCategoryStore(state => state.categoryItems);
   const navigate = useNavigate();
   
   // Get all subcategories for a category

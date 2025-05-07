@@ -2,7 +2,7 @@
 import { useNoteStore } from "@/lib/store";
 import { useChatStore } from "@/lib/chatStore";
 import { DrawPath, Note, Attachment } from "@/types";
-import { useEffect, useState } from "react";
+import { useEffect, useState, CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
