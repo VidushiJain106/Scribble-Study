@@ -18,12 +18,12 @@ import { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "../ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-
 interface EditorProps {
   noteId: string;
 }
-
-export function Editor({ noteId }: EditorProps) {
+export function Editor({
+  noteId
+}: EditorProps) {
   const notes = useNoteStore(state => state.notes);
   const updateNote = useNoteStore(state => state.updateNote);
   const deleteNote = useNoteStore(state => state.deleteNote);
@@ -31,7 +31,6 @@ export function Editor({ noteId }: EditorProps) {
   const addAttachmentToNote = useNoteStore(state => state.addAttachmentToNote);
   const removeAttachmentFromNote = useNoteStore(state => state.removeAttachmentFromNote);
   const analyzeNote = useChatStore(state => state.analyzeNote);
-  
   const [note, setNote] = useState<Note | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -39,8 +38,9 @@ export function Editor({ noteId }: EditorProps) {
   const [textFormatting, setTextFormatting] = useState<CSSProperties>({});
   const [analysisTimer, setAnalysisTimer] = useState<NodeJS.Timeout | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
 
   // Load note data
@@ -56,24 +56,25 @@ export function Editor({ noteId }: EditorProps) {
   // Auto-analyze note content when it changes
   useEffect(() => {
     if (!note) return;
-    
+
     // Clear previous timer
     if (analysisTimer) {
       clearTimeout(analysisTimer);
     }
-    
+
     // Only analyze if there's significant content
     if (content.length > 50) {
-      setAnalysisTimer(
-        setTimeout(() => {
-          setIsAnalyzing(true);
-          const updatedNote = { ...note, content };
-          analyzeNote(updatedNote);
-          setIsAnalyzing(false);
-        }, 5000) // Wait 5 seconds after typing stops
+      setAnalysisTimer(setTimeout(() => {
+        setIsAnalyzing(true);
+        const updatedNote = {
+          ...note,
+          content
+        };
+        analyzeNote(updatedNote);
+        setIsAnalyzing(false);
+      }, 5000) // Wait 5 seconds after typing stops
       );
     }
-    
     return () => {
       if (analysisTimer) {
         clearTimeout(analysisTimer);
@@ -127,46 +128,29 @@ export function Editor({ noteId }: EditorProps) {
       [formatType]: value
     }));
   };
-
   const handleExplainClick = () => {
     navigate(`/note/${noteId}/explanation`);
   };
-  
   if (!note) {
     return <div className="flex items-center justify-center h-full">
         <p>Note not found</p>
       </div>;
   }
-  
   const showExplainButton = note.analysis && note.analysis.readyForExplanation;
-
   return <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex-1 flex items-center gap-3">
-          <Input 
-            value={title} 
-            onChange={e => setTitle(e.target.value)} 
-            className="border-none text-lg font-medium focus-visible:ring-0 p-0 h-auto" 
-            placeholder="Untitled Note" 
-          />
+          <Input value={title} onChange={e => setTitle(e.target.value)} className="border-none text-lg font-medium focus-visible:ring-0 p-0 h-auto" placeholder="Untitled Note" />
           
-          {showExplainButton && (
-            <Badge 
-              variant="outline" 
-              className="flex items-center gap-1 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors animate-pulse"
-              onClick={handleExplainClick}
-            >
+          {showExplainButton && <Badge variant="outline" className="flex items-center gap-1 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors animate-pulse" onClick={handleExplainClick}>
               <Lightbulb className="h-3 w-3" />
               <span>Explain!</span>
-            </Badge>
-          )}
+            </Badge>}
           
-          {isAnalyzing && (
-            <Badge variant="outline" className="flex items-center gap-1">
+          {isAnalyzing && <Badge variant="outline" className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
               <span>Analyzing...</span>
-            </Badge>
-          )}
+            </Badge>}
         </div>
         
         <div className="flex items-center gap-2">
@@ -198,13 +182,7 @@ export function Editor({ noteId }: EditorProps) {
         
         <TabsContent value="text" className="flex-1 p-4 overflow-auto py-0">
           <FontFormatBar onFormatChange={handleFormatChange} />
-          <Textarea 
-            value={content} 
-            onChange={e => setContent(e.target.value)} 
-            className="min-h-[200px] resize-none border-none focus-visible:ring-0 p-0" 
-            placeholder="Start writing your note..." 
-            style={textFormatting} 
-          />
+          <Textarea value={content} onChange={e => setContent(e.target.value)} className="min-h-[200px] resize-none border-none focus-visible:ring-0 p-0" placeholder="Start writing your note..." style={textFormatting} />
           
           {note.attachments && note.attachments.length > 0 && <div className="mt-4">
               <h3 className="text-sm font-medium mb-2">Attachments</h3>
@@ -227,37 +205,14 @@ export function Editor({ noteId }: EditorProps) {
             </div>}
         </TabsContent>
         
-        <TabsContent value="draw" className="flex-1 flex flex-col">
-          <div className="p-2 sticky top-0 z-10 bg-background">
-            <ToolBar />
-          </div>
-          <Separator />
-          <div className="flex-1 relative bg-card">
-            <DrawingCanvas onDrawingComplete={handleDrawingComplete} />
-          </div>
-          
-          {note.drawings && note.drawings.length > 0 && <div className="p-4 border-t">
-              <h3 className="text-sm font-medium mb-2">Saved Drawings</h3>
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {note.drawings.map((drawing, index) => <Card key={drawing.id} className="flex-shrink-0 w-24 h-24 flex items-center justify-center">
-                    <span className="text-xs text-muted-foreground">Drawing {index + 1}</span>
-                  </Card>)}
-              </div>
-            </div>}
-        </TabsContent>
+        
       </Tabs>
       
-      {note.analysis && note.analysis.readyForExplanation && (
-        <div className="fixed bottom-20 right-6 z-40">
-          <Button 
-            onClick={handleExplainClick}
-            className="flex items-center gap-2 shadow-lg animate-bounce"
-            size="lg"
-          >
+      {note.analysis && note.analysis.readyForExplanation && <div className="fixed bottom-20 right-6 z-40">
+          <Button onClick={handleExplainClick} className="flex items-center gap-2 shadow-lg animate-bounce" size="lg">
             <GraduationCap className="h-5 w-5" />
             <span>Explain This Topic!</span>
           </Button>
-        </div>
-      )}
+        </div>}
     </div>;
 }
