@@ -1,3 +1,4 @@
+
 import { Textarea } from "@/components/ui/textarea";
 import { DrawPath } from "@/types";
 import { useEffect } from "react";
@@ -48,9 +49,6 @@ export function Editor({ noteId }: EditorProps) {
     );
   }
   
-  // Check if the note has analysis data and is ready for explanation
-  const showExplainButton = note.analysis && note.analysis.readyForExplanation;
-
   // Text content tab
   const textContent = (
     <>
@@ -77,6 +75,7 @@ export function Editor({ noteId }: EditorProps) {
     <DrawingCanvas onComplete={handleDrawingComplete} />
   );
 
+  // We're no longer showing the floating explain button since we have a permanent one in the header
   return (
     <div className="flex flex-col h-full">
       <NoteActions 
@@ -97,11 +96,6 @@ export function Editor({ noteId }: EditorProps) {
         setActiveTab={setActiveTab}
         textContent={textContent}
         drawContent={drawContent}
-      />
-      
-      <FloatingExplainButton 
-        onClick={handleExplainClick} 
-        show={showExplainButton}
       />
     </div>
   );

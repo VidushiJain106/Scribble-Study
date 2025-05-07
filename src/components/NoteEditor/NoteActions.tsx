@@ -51,14 +51,10 @@ export const NoteActions: FC<NoteActionsProps> = ({
             placeholder="Untitled Note"
           />
           
-          {showExplainButton && (
-            <Badge 
-              variant="outline" 
-              className="flex items-center gap-1 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors animate-pulse" 
-              onClick={handleExplainClick}
-            >
-              <Lightbulb className="h-3 w-3" />
-              <span>Explain!</span>
+          {isAnalyzing && (
+            <Badge variant="outline" className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+              <span>Analyzing...</span>
             </Badge>
           )}
           
@@ -72,17 +68,22 @@ export const NoteActions: FC<NoteActionsProps> = ({
               <span>Analyze Note</span>
             </Badge>
           )}
-          
-          {isAnalyzing && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-              <span>Analyzing...</span>
-            </Badge>
-          )}
         </div>
         
         <div className="flex items-center gap-2">
           <FileUploader onFileUpload={handleFileUpload} />
+          
+          {/* Permanent Explain button that is highlighted when ready */}
+          <Button 
+            variant={showExplainButton ? "default" : "outline"} 
+            size="icon" 
+            className={`rounded-full ${showExplainButton ? 'animate-pulse bg-primary text-primary-foreground' : ''}`}
+            onClick={handleExplainClick} 
+            aria-label="Explain note"
+            title={showExplainButton ? "Explanation ready!" : "Not enough content for explanation"}
+          >
+            <Lightbulb className="h-4 w-4" />
+          </Button>
           
           <Button 
             variant="outline" 
@@ -106,24 +107,7 @@ export const NoteActions: FC<NoteActionsProps> = ({
         </div>
       </div>
       
-      {/* Add a prominent explain button at the top of the note content if available */}
-      {showExplainButton && (
-        <div className="px-4 py-3 bg-muted/50 border-b flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm">
-            <Lightbulb className="h-4 w-4 text-primary" />
-            <span>This note has been analyzed and is ready for explanation!</span>
-          </div>
-          <Button 
-            onClick={handleExplainClick} 
-            variant="default" 
-            size="sm" 
-            className="flex items-center gap-2"
-          >
-            <GraduationCap className="h-4 w-4" />
-            <span>Explain This Topic</span>
-          </Button>
-        </div>
-      )}
+      {/* Remove the prominent explain button section since we now have a permanent button in the header */}
     </>
   );
 };
