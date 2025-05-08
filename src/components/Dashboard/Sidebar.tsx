@@ -1,8 +1,7 @@
-
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Plus, FolderPlus, FileText, Clock, GraduationCap, PenLine } from "lucide-react";
+import { Plus, FolderPlus, FileText, Clock, GraduationCap } from "lucide-react";
 import { useNoteStore } from "@/lib/store";
 import { useCategoryStore } from "@/lib/categoryStore";
 import { UserMenu } from "./UserMenu";
@@ -42,6 +41,10 @@ export function Sidebar() {
     if (path === '/') {
       // For root path, check if we're on root or /app
       return location.pathname === '/' || location.pathname === '/app';
+    }
+    if (path === '/exam-prep') {
+      // Only highlight Exam Prep for the exact base route (not nested)
+      return location.pathname === '/exam-prep';
     }
     return location.pathname.startsWith(path);
   };
@@ -107,15 +110,6 @@ export function Sidebar() {
         >
           <GraduationCap className="h-4 w-4" />
           Exam Prep
-        </Button>
-        
-        <Button 
-          variant={isActive('/documents') ? "secondary" : "ghost"}
-          className={`justify-start w-full mb-2 flex items-center gap-2 ${isActive('/documents') ? 'bg-primary/10 text-primary font-medium' : ''}`}
-          onClick={() => handleNavigate("/documents")}
-        >
-          <PenLine className="h-4 w-4" />
-          Upload Documents
         </Button>
 
         <Separator className="my-4" />

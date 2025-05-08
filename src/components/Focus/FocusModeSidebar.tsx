@@ -1,16 +1,26 @@
-
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { FileText, PenLine, Clock, Timer, FolderOpen, LayoutGrid, GraduationCap } from "lucide-react";
-import { useNavigate, Link } from "react-router-dom";
+import { FileText, PenLine, Clock, Timer, LayoutGrid, GraduationCap } from "lucide-react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 
 export function FocusModeSidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleCreateNote = () => {
     navigate('/note/new');
   };
+
+  const isActive = (path: string) => {
+    if (path === "/") {
+      return location.pathname === "/" || location.pathname === "/app";
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  const getActiveClasses = (path: string) =>
+    isActive(path) ? "bg-primary/10 text-primary font-medium" : "";
 
   return <Sidebar>
       <SidebarHeader className="flex justify-between items-center p-4">
@@ -31,7 +41,9 @@ export function FocusModeSidebar() {
         
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild isActive={isActive("/")}
+              className={getActiveClasses("/")}
+            >            
               <Link to="/" className="flex items-center gap-2">
                 <LayoutGrid className="h-5 w-5" />
                 <span>All Notes</span>
@@ -40,7 +52,9 @@ export function FocusModeSidebar() {
           </SidebarMenuItem>
           
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="bg-primary/10 text-primary font-medium">
+            <SidebarMenuButton asChild isActive={isActive("/focus")}
+              className={getActiveClasses("/focus")}
+            >            
               <Link to="/focus" className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
                 <span>Focus Mode</span>
@@ -49,19 +63,12 @@ export function FocusModeSidebar() {
           </SidebarMenuItem>
           
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild isActive={isActive("/exam-prep")}
+              className={getActiveClasses("/exam-prep")}
+            >            
               <Link to="/exam-prep" className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5" />
                 <span>Exam Prep</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link to="/documents" className="flex items-center gap-2">
-                <PenLine className="h-5 w-5" />
-                <span>Upload Notes / Documents</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

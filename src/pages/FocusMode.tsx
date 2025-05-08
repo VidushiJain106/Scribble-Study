@@ -1,13 +1,26 @@
-
 import React, { useState } from 'react';
-import { FocusModeSidebar } from '@/components/Focus/FocusModeSidebar';
 import { FocusModeSettings } from '@/components/Focus/FocusModeSettings';
 import { FocusModeList } from '@/components/Focus/FocusModeList';
 import { useFocusStore } from '@/lib/focusStore';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { Plus } from 'lucide-react';
+import { SidebarProvider, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Plus, Menu } from 'lucide-react';
+import { Sidebar } from '@/components/Dashboard/Sidebar';
+
+const FloatingSidebarTrigger = () => {
+  const { open } = useSidebar();
+
+  if (open) return null;
+
+  return (
+    <div className="absolute top-4 left-4 z-10">
+      <SidebarTrigger className="bg-background/80 backdrop-blur-sm hover:bg-background/90 shadow-sm">
+        <Menu className="h-5 w-5" />
+      </SidebarTrigger>
+    </div>
+  );
+};
 
 const FocusMode = () => {
   const [openSettings, setOpenSettings] = useState(false);
@@ -27,8 +40,9 @@ const FocusMode = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <FocusModeSidebar />
+      <div className="min-h-screen flex w-full relative">
+        <Sidebar />
+        <FloatingSidebarTrigger />
         <main className="flex-1 p-6">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold">Focus Mode</h1>
