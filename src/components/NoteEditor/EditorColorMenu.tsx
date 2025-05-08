@@ -1,4 +1,3 @@
-
 import { Editor } from '@tiptap/react';
 import { Popover, PopoverContent } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -47,7 +46,7 @@ export function EditorColorMenu({ editor, isOpen, setIsOpen }: EditorColorMenuPr
   };
 
   const setHighlight = (color: string) => {
-    editor.chain().focus().setHighlight({ color }).run();
+    editor.chain().focus().toggleHighlight({ color }).run();
   };
 
   const removeColor = () => {
@@ -55,7 +54,7 @@ export function EditorColorMenu({ editor, isOpen, setIsOpen }: EditorColorMenuPr
   };
 
   const removeHighlight = () => {
-    editor.chain().focus().setHighlight(false).run();
+    editor.chain().focus().toggleHighlight(false).run();
   };
 
   return (

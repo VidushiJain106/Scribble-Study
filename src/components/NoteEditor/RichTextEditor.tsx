@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -194,7 +193,7 @@ export function RichTextEditor({
   // Helper to handle image uploads
   const addImage = useCallback((url: string, alt: string = "") => {
     if (editor) {
-      editor.chain().focus().insertImage({ src: url, alt }).run();
+      editor.chain().focus().setImage({ src: url, alt }).run();
     }
   }, [editor]);
 

@@ -68,7 +68,7 @@ export function EditorToolbar({ editor, setIsTableMenuOpen, setIsColorMenuOpen }
       editor
         .chain()
         .focus()
-        .insertImage({ src: imageUrl, alt: imageAlt || '' })
+        .setImage({ src: imageUrl, alt: imageAlt || '' })
         .run();
 
       // Close popover and reset
@@ -102,7 +102,7 @@ export function EditorToolbar({ editor, setIsTableMenuOpen, setIsColorMenuOpen }
           value="underline" 
           size="sm"
           aria-label="Underline"
-          onClick={() => editor.chain().focus().toggleMark('underline').run()}
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
           <Underline className="h-4 w-4" />
         </ToggleGroupItem>
@@ -128,7 +128,7 @@ export function EditorToolbar({ editor, setIsTableMenuOpen, setIsColorMenuOpen }
         <ToggleGroupItem 
           value="left" 
           size="sm" 
-          onClick={() => editor.chain().focus().setAlign('left').run()}
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
           aria-label="Align left"
         >
           <AlignLeft className="h-4 w-4" />
@@ -136,7 +136,7 @@ export function EditorToolbar({ editor, setIsTableMenuOpen, setIsColorMenuOpen }
         <ToggleGroupItem 
           value="center" 
           size="sm"
-          onClick={() => editor.chain().focus().setAlign('center').run()}
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
           aria-label="Align center"
         >
           <AlignCenter className="h-4 w-4" />
@@ -144,7 +144,7 @@ export function EditorToolbar({ editor, setIsTableMenuOpen, setIsColorMenuOpen }
         <ToggleGroupItem 
           value="right" 
           size="sm"
-          onClick={() => editor.chain().focus().setAlign('right').run()}
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
           aria-label="Align right"
         >
           <AlignRight className="h-4 w-4" />
@@ -152,7 +152,7 @@ export function EditorToolbar({ editor, setIsTableMenuOpen, setIsColorMenuOpen }
         <ToggleGroupItem 
           value="justify" 
           size="sm"
-          onClick={() => editor.chain().focus().setAlign('justify').run()}
+          onClick={() => editor.chain().focus().setTextAlign('justify').run()}
           aria-label="Justify"
         >
           <AlignJustify className="h-4 w-4" />
