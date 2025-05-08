@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
@@ -7,6 +6,7 @@ import { useDrawingStore } from './drawingStore';
 import { useCategoryStore } from './categoryStore';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import * as React from 'react';
 
 interface NoteState {
   notes: Note[];
@@ -256,7 +256,7 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
           name: attachmentData.name,
           url: attachmentData.url,
           type: attachmentData.type,
-          size: attachmentData.size,
+          size: attachmentData.size || 0,
           created_at: now
         });
       

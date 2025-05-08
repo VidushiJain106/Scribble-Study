@@ -1,4 +1,3 @@
-
 import { useNoteStore } from "@/lib/store";
 import { useChatStore } from "@/lib/chatStore";
 import { DrawPath, Note, Attachment } from "@/types";
@@ -175,13 +174,8 @@ export function useNoteEditor(noteId: string) {
       ...note,
       content
     };
+    
     analyzeNote(updatedNote)
-      .then(() => {
-        toast({
-          title: "Analysis complete",
-          description: "Your note has been analyzed"
-        });
-      })
       .catch(error => {
         console.error("Error during analysis:", error);
         toast({
