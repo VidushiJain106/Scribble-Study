@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { Note, NoteCategory, NoteColor, Attachment, DrawPath } from '@/types';
@@ -33,10 +34,11 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
     set({ isLoading: true });
     
     try {
-      // Fetch notes
+      // Fetch notes for the specific logged-in user
       const { data: notes, error } = await supabase
         .from('notes')
         .select('*')
+        .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
       
       if (error) {
@@ -126,7 +128,9 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
       const { error } = await supabase
         .from('notes')
         .update(supabaseData)
-        .eq('id', id);
+        .eq('id', id)
+        // Ensure we're only updating the user's own notes
+        .eq('user_id', user.id);
       
       if (error) {
         console.error('Error updating note:', error);
@@ -155,7 +159,9 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
       const { error } = await supabase
         .from('notes')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        // Ensure we're only deleting the user's own notes
+        .eq('user_id', user.id);
       
       if (error) {
         console.error('Error deleting note:', error);
@@ -203,7 +209,8 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
       const { error: noteError } = await supabase
         .from('notes')
         .update({ has_drawings: true, updated_at: now })
-        .eq('id', noteId);
+        .eq('id', noteId)
+        .eq('user_id', user.id); // Ensure we're updating the user's own note
       
       if (noteError) {
         console.error('Error updating note with drawing info:', noteError);
@@ -268,7 +275,8 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
       const { error: noteError } = await supabase
         .from('notes')
         .update({ has_attachments: true, updated_at: now })
-        .eq('id', noteId);
+        .eq('id', noteId)
+        .eq('user_id', user.id); // Ensure we're updating the user's own note
       
       if (noteError) {
         console.error('Error updating note with attachment info:', noteError);
@@ -342,6 +350,7 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
             .from('notes')
             .update({ has_attachments: false, updated_at: new Date() })
             .eq('id', noteId)
+            .eq('user_id', user.id) // Ensure we're updating the user's own note
             .then(({ error }) => {
               if (error) console.error('Error updating note attachment flag:', error);
             });
@@ -369,6 +378,9 @@ export const useInitializeNotes = () => {
   React.useEffect(() => {
     if (user) {
       fetchNotes();
+    } else {
+      // Clear notes when user logs out
+      useNoteStore.setState({ notes: [], activeNoteId: null });
     }
   }, [user, fetchNotes]);
 };
