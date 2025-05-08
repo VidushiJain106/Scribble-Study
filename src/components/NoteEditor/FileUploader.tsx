@@ -1,22 +1,27 @@
-
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { extractTextFromPdf } from "@/lib/pdfUtils";
 import { Attachment } from "@/types";
-import { FileUp, Image } from "lucide-react";
+import { FileUp, Image, FileText } from "lucide-react";
 import { useRef, useState } from "react";
 
 interface FileUploaderProps {
   onFileUpload: (file: Omit<Attachment, 'id' | 'createdAt'>) => void;
+  onPdfTextExtracted?: (text: string) => void;
 }
 
-export function FileUploader({ onFileUpload }: FileUploaderProps) {
+export function FileUploader({ onFileUpload, onPdfTextExtracted }: FileUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isPdf, setIsPdf] = useState(false);
+  const [extractText, setExtractText] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,10 +29,10 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
     if (!file) return;
     
     // Check file type
-    const isPdf = file.type === "application/pdf";
+    const isPdfFile = file.type === "application/pdf";
     const isImage = file.type.startsWith("image/");
     
-    if (!isPdf && !isImage) {
+    if (!isPdfFile && !isImage) {
       toast({
         title: "Invalid file type",
         description: "Please upload a PDF or image file",
@@ -47,45 +52,86 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
     }
     
     setUploadedFile(file);
+    setIsPdf(isPdfFile);
     
     // Create preview URL for images
     if (isImage) {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+      setExtractText(false);
     } else {
       setPreviewUrl(null);
+      
+      // Default to text extraction if PDF is uploaded and handler exists
+      if (onPdfTextExtracted) {
+        setExtractText(true);
+      }
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!uploadedFile) return;
     
-    // In a real app, we would upload the file to a server
-    // Here we'll simulate it by creating a data URL
+    setIsProcessing(true);
     
-    const reader = new FileReader();
-    reader.onload = () => {
-      const url = reader.result as string;
+    try {
+      // Create a data URL for the file
+      const reader = new FileReader();
       
-      onFileUpload({
-        name: uploadedFile.name,
-        type: uploadedFile.type.startsWith("image/") ? "image" : "pdf",
-        url,
-        thumbnailUrl: previewUrl || undefined
-      });
+      reader.onload = async () => {
+        const url = reader.result as string;
+        
+        // First, upload the file as an attachment
+        onFileUpload({
+          name: uploadedFile.name,
+          type: isPdf ? "pdf" : "image",
+          url,
+          thumbnailUrl: previewUrl || undefined
+        });
+        
+        // If it's a PDF and text extraction is enabled, extract the text
+        if (isPdf && extractText && onPdfTextExtracted) {
+          try {
+            const text = await extractTextFromPdf(url);
+            onPdfTextExtracted(text);
+            
+            toast({
+              title: "Text extracted",
+              description: "PDF text has been added to your note"
+            });
+          } catch (error) {
+            console.error("Failed to extract text:", error);
+            toast({
+              title: "Text extraction failed",
+              description: "Failed to extract text from the PDF",
+              variant: "destructive"
+            });
+          }
+        }
+        
+        // Reset state
+        setUploadedFile(null);
+        setPreviewUrl(null);
+        setIsDialogOpen(false);
+        setIsProcessing(false);
+        
+        toast({
+          title: "File uploaded",
+          description: `${uploadedFile.name} has been added to your note`
+        });
+      };
       
-      // Reset state
-      setUploadedFile(null);
-      setPreviewUrl(null);
-      setIsDialogOpen(false);
+      reader.readAsDataURL(uploadedFile);
+    } catch (error) {
+      console.error("Upload error:", error);
+      setIsProcessing(false);
       
       toast({
-        title: "File uploaded",
-        description: `${uploadedFile.name} has been added to your note`
+        title: "Upload failed",
+        description: "Failed to upload the file",
+        variant: "destructive"
       });
-    };
-    
-    reader.readAsDataURL(uploadedFile);
+    }
   };
 
   return (
@@ -156,11 +202,28 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
                   </div>
                 )}
                 
+                {isPdf && onPdfTextExtracted && (
+                  <div className="flex items-center justify-between py-3 px-1 mb-3 border-t border-b">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="extract-text" className="text-sm">
+                        Extract and add text to note
+                      </Label>
+                    </div>
+                    <Switch
+                      id="extract-text"
+                      checked={extractText}
+                      onCheckedChange={setExtractText}
+                    />
+                  </div>
+                )}
+                
                 <Button 
                   onClick={handleUpload} 
                   className="w-full"
+                  disabled={isProcessing}
                 >
-                  Upload
+                  {isProcessing ? "Processing..." : "Upload"}
                 </Button>
               </div>
             )}

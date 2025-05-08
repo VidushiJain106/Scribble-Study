@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, Lightbulb, Save, Trash } from "lucide-react";
@@ -16,6 +15,7 @@ interface NoteActionsProps {
   handleSave: () => void;
   deleteNote: (id: string) => void;
   handleFileUpload: (attachment: any) => void;
+  handlePdfTextExtracted?: (text: string) => void;
   handleExplainClick: () => void;
   forceAnalysis: () => void;
 }
@@ -29,6 +29,7 @@ export const NoteActions: FC<NoteActionsProps> = ({
   handleSave,
   deleteNote,
   handleFileUpload,
+  handlePdfTextExtracted,
   handleExplainClick,
   forceAnalysis
 }) => {
@@ -71,7 +72,10 @@ export const NoteActions: FC<NoteActionsProps> = ({
         </div>
         
         <div className="flex items-center gap-2">
-          <FileUploader onFileUpload={handleFileUpload} />
+          <FileUploader 
+            onFileUpload={handleFileUpload} 
+            onPdfTextExtracted={handlePdfTextExtracted}
+          />
           
           {/* Permanent Explain button that is highlighted when ready */}
           <Button 

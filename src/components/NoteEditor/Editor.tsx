@@ -31,6 +31,7 @@ export function Editor({ noteId }: EditorProps) {
     handleSave,
     handleDrawingComplete,
     handleFileUpload,
+    handlePdfTextExtracted,
     handleDeleteAttachment,
     handleFormatChange,
     handleExplainClick,
@@ -248,6 +249,7 @@ export function Editor({ noteId }: EditorProps) {
           handleSave={handleSave}
           deleteNote={deleteNote}
           handleFileUpload={handleFileUpload}
+          handlePdfTextExtracted={handlePdfTextExtracted}
           handleExplainClick={handleExplainClick}
           forceAnalysis={forceAnalysis}
         />

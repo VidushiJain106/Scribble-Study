@@ -1,4 +1,3 @@
-
 import { useNoteStore } from "@/lib/store";
 import { useChatStore } from "@/lib/chatStore";
 import { DrawPath, Note, Attachment } from "@/types";
@@ -94,6 +93,30 @@ export function useNoteEditor(noteId: string) {
     addAttachmentToNote(noteId, attachment);
   };
 
+  // Handle PDF text extraction
+  const handlePdfTextExtracted = (extractedText: string) => {
+    if (!note) return;
+    
+    // Append the extracted text to the note content with a separator
+    const updatedContent = content + 
+      (content ? '\n\n--- Extracted from PDF ---\n\n' : '--- Extracted from PDF ---\n\n') +
+      extractedText;
+    
+    // Update the content state
+    setContent(updatedContent);
+    
+    // Save the updated content immediately
+    updateNote(noteId, {
+      title,
+      content: updatedContent
+    });
+    
+    toast({
+      title: "PDF text added",
+      description: "Text from the PDF has been added to your note"
+    });
+  };
+
   // Handle delete attachment
   const handleDeleteAttachment = (attachmentId: string) => {
     if (!note) return;
@@ -145,6 +168,7 @@ export function useNoteEditor(noteId: string) {
     handleSave,
     handleDrawingComplete,
     handleFileUpload,
+    handlePdfTextExtracted,
     handleDeleteAttachment,
     handleFormatChange,
     handleExplainClick,
