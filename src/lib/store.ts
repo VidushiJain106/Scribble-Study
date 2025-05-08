@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
@@ -149,7 +150,7 @@ export const useNoteStore = create<NoteState>()(
         if (data.category !== undefined) supabaseData.category = data.category;
         if (data.color !== undefined) supabaseData.color = data.color;
         if (data.hasAttachments !== undefined) supabaseData.has_attachments = data.hasAttachments;
-        if (data.hasDrawings !== undefined) supabaseData.hasDrawings = data.hasDrawings;
+        if (data.hasDrawings !== undefined) supabaseData.has_drawings = data.hasDrawings; // Fixed field name
         
         // Always update the timestamp
         supabaseData.updated_at = new Date().toISOString();
