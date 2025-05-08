@@ -398,12 +398,12 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
                 You've correctly answered all {quiz.questions.length} questions. You have a solid understanding of this topic.
               </p>
               <div className="flex gap-3 mt-4">
-                <Button
-                  variant="outline"
-                  onClick={onComplete}
-                >
-                  Continue Learning
-                </Button>
+              <Button
+                variant="outline"
+                onClick={onComplete}
+              >
+                Continue Learning
+              </Button>
                 {onGenerateMoreQuestions && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

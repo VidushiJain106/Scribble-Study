@@ -139,11 +139,11 @@ export function useExplanationData(noteId: string | undefined, note: any) {
           // Check if we have a stored quiz
           if (!forceGenerate) {
             const { data: fetchedQuiz } = await supabase
-              .from('quizzes')
-              .select('*')
-              .eq('note_id', noteId)
-              .single();
-            
+            .from('quizzes')
+            .select('*')
+            .eq('note_id', noteId)
+            .single();
+          
             if (fetchedQuiz) {
               existingQuiz = {
                 id: fetchedQuiz.id as string,
@@ -152,7 +152,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
                 introduction: fetchedQuiz.introduction as string,
                 questions: fetchedQuiz.questions as Quiz['questions'],
                 createdAt: new Date(fetchedQuiz.created_at as string)
-              };
+            };
               
               // If we're not forcing generation and we have an existing quiz, return it
               if (!forceGenerate) {
@@ -162,20 +162,20 @@ export function useExplanationData(noteId: string | undefined, note: any) {
           }
           
           // Generate a new quiz or additional questions
-          const { data, error } = await supabase.functions.invoke('generate-quiz', {
-            body: {
-              noteId,
-              topic: explanation.topic,
+            const { data, error } = await supabase.functions.invoke('generate-quiz', {
+              body: {
+                noteId,
+                topic: explanation.topic,
               explanation: JSON.stringify(explanation.content),
               forceGenerate,
               difficulty: difficulty || 'mixed'
-            },
-          });
-          
-          if (error) {
-            throw new Error(error.message);
-          }
-          
+              },
+            });
+            
+            if (error) {
+              throw new Error(error.message);
+            }
+            
           // If we're generating more questions (forceGenerate is true) and we already have a quiz state
           if (forceGenerate && quiz) {
             console.log("Merging new questions with existing ones", {
@@ -201,13 +201,13 @@ export function useExplanationData(noteId: string | undefined, note: any) {
           }
           
           // Otherwise return a brand new quiz
-          return {
-            noteId,
-            topic: explanation.topic,
-            introduction: data.introduction,
-            questions: data.questions,
-            createdAt: new Date()
-          };
+            return {
+              noteId,
+              topic: explanation.topic,
+              introduction: data.introduction,
+              questions: data.questions,
+              createdAt: new Date()
+            };
         },
         null
       );
