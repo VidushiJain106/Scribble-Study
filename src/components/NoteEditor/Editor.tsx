@@ -9,7 +9,7 @@ import { TabsContainer } from "./TabsContainer";
 import { AttachmentGallery } from "./AttachmentGallery";
 import { FloatingExplainButton } from "./FloatingExplainButton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChatStore } from "@/lib/chatStore";
 
@@ -179,10 +179,21 @@ export function Editor({ noteId }: EditorProps) {
         <Dialog open={openSummary} onOpenChange={setOpenSummary}>
           <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
-              <DialogTitle>Explanation</DialogTitle>
+              <div className="flex items-center justify-between mb-2">
+                <DialogTitle className="text-xl">Explanation</DialogTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setOpenSummary(false)}
+                  className="flex items-center gap-1"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Note
+                </Button>
+              </div>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="rounded-md bg-muted p-3 text-sm whitespace-pre-wrap">
+            <div className="space-y-4 mt-2">
+              <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap">
                 {explanation || "Highlight text to generate an explanation..."}
               </div>
               
@@ -190,6 +201,7 @@ export function Editor({ noteId }: EditorProps) {
                 <Button 
                   onClick={handleMiddleSchoolExplain}
                   size="sm"
+                  variant="outline"
                   className="mt-2"
                 >
                   Explain to a Middle Schooler
@@ -197,9 +209,9 @@ export function Editor({ noteId }: EditorProps) {
               )}
               
               {middleSchoolExplanation && (
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Middle School Explanation:</h4>
-                  <div className="rounded-md bg-muted p-3 text-sm whitespace-pre-wrap">
+                <div className="mt-4 border-t pt-4">
+                  <h4 className="text-sm font-medium mb-2">Middle School Explanation:</h4>
+                  <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap">
                     {middleSchoolExplanation}
                   </div>
                 </div>

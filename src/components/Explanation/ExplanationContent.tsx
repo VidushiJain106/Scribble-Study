@@ -1,8 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Explanation } from "@/types";
-import { HelpCircle, Lightbulb } from "lucide-react";
+import { HelpCircle, Lightbulb, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -42,6 +41,15 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
     return [String(content)];
   };
   
+  // Helper to navigate back to note
+  const handleBackToNote = () => {
+    if (explanation && explanation.noteId) {
+      navigate(`/note/${explanation.noteId}`);
+    } else {
+      navigate('/');
+    }
+  };
+  
   return (
     <div className="container max-w-4xl mx-auto py-6 px-4">
       <div className="flex items-center justify-between mb-8">
@@ -49,13 +57,23 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
           <h1 className="text-3xl font-bold mb-2">{explanation.content.title}</h1>
           <p className="text-muted-foreground">Created from your notes on {explanation.topic}</p>
         </div>
-        <Button
-          onClick={onTakeQuiz}
-          className="fixed right-6 bottom-6 shadow-lg flex items-center gap-2 z-10 animate-pulse"
-        >
-          <HelpCircle className="h-5 w-5" />
-          Test Your Knowledge!
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleBackToNote}
+            className="flex items-center gap-1"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Note
+          </Button>
+          <Button
+            onClick={onTakeQuiz}
+            className="flex items-center gap-2"
+          >
+            <HelpCircle className="h-5 w-5" />
+            Test Knowledge
+          </Button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
