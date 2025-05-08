@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +11,7 @@ import FocusMode from "./pages/FocusMode";
 import DocumentsPage from "./pages/DocumentsPage";
 import ExamPrepPage from "./pages/ExamPrepPage";
 import ExplanationPage from "./pages/ExplanationPage";
+import ResourcesPage from "./pages/ResourcesPage";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useEffect } from "react";
 import LandingPage from "./pages/LandingPage";
@@ -109,6 +109,13 @@ const App = () => {
                     <ErrorBoundary>
                       <ProtectedRoute>
                         <ExplanationPage />
+                      </ProtectedRoute>
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/note/:id/resources" element={
+                    <ErrorBoundary>
+                      <ProtectedRoute>
+                        <ResourcesPage />
                       </ProtectedRoute>
                     </ErrorBoundary>
                   } />

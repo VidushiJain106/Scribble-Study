@@ -337,7 +337,6 @@ export function Editor({ noteId }: EditorProps) {
     <DrawingCanvas onComplete={handleDrawingComplete} />
   );
 
-  // We're no longer showing the floating explain button since we have a permanent one in the header
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="sticky top-0 z-20 bg-background">

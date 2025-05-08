@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Quiz, QuizAnswer, QuizQuestion } from "@/types";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle, ChevronDown, ChevronUp, HelpCircle, Lightbulb, Plus } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle, ChevronDown, ChevronUp, HelpCircle, Lightbulb, Plus, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { withSupabase, getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
 import {
@@ -18,9 +18,10 @@ interface QuizContentProps {
   onComplete: () => void;
   onBackToExplanation: () => void;
   onGenerateMoreQuestions?: (difficulty?: string) => Promise<void>;
+  onSaveQuiz?: () => void;
 }
 
-export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateMoreQuestions }: QuizContentProps) {
+export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateMoreQuestions, onSaveQuiz }: QuizContentProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, QuizAnswer>>({});
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -251,34 +252,46 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
       
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold">Test Your Knowledge</h1>
-        {onGenerateMoreQuestions && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2"
-                disabled={isGeneratingMore}
-              >
-                <Plus className="h-4 w-4" />
-                {isGeneratingMore ? "Generating..." : "More Questions"}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("mixed")}>
-                <span className="font-medium">Mixed Difficulty</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("easy")}>
-                <span className="text-green-500 font-medium">Easy</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("moderate")}>
-                <span className="text-yellow-500 font-medium">Moderate</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("hard")}>
-                <span className="text-red-500 font-medium">Hard</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        <div className="flex gap-2">
+          {onSaveQuiz && (
+            <Button
+              variant="secondary"
+              className="flex items-center gap-2"
+              onClick={onSaveQuiz}
+            >
+              <Save className="h-4 w-4" />
+              Save Quiz
+            </Button>
+          )}
+          {onGenerateMoreQuestions && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2"
+                  disabled={isGeneratingMore}
+                >
+                  <Plus className="h-4 w-4" />
+                  {isGeneratingMore ? "Generating..." : "More Questions"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("mixed")}>
+                  <span className="font-medium">Mixed Difficulty</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("easy")}>
+                  <span className="text-green-500 font-medium">Easy</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("moderate")}>
+                  <span className="text-yellow-500 font-medium">Moderate</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("hard")}>
+                  <span className="text-red-500 font-medium">Hard</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
       
       <p className="text-muted-foreground mb-6">{quiz.introduction}</p>

@@ -26,6 +26,8 @@ export interface Note {
   attachments?: Attachment[];
   drawings?: Drawing[];
   analysis?: NoteAnalysis;
+  savedExplanations?: Explanation[];
+  savedQuizzes?: Quiz[];
 }
 
 export type NoteColor = 

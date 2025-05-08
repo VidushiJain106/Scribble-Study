@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import { Note, NoteCategory, NoteColor, Attachment, DrawPath } from '@/types';
+import { Note, NoteCategory, NoteColor, Attachment, DrawPath, Explanation, Quiz } from '@/types';
 import { useDrawingStore } from './drawingStore';
 import { useCategoryStore } from './categoryStore';
 
@@ -17,6 +17,10 @@ interface NoteState {
   addDrawingToNote: (noteId: string, paths: DrawPath[]) => void;
   addAttachmentToNote: (noteId: string, attachment: Omit<Attachment, 'id' | 'createdAt'>) => void;
   removeAttachmentFromNote: (noteId: string, attachmentId: string) => void;
+  saveExplanationToNote: (noteId: string, explanation: Explanation) => void;
+  saveQuizToNote: (noteId: string, quiz: Quiz) => void;
+  removeSavedExplanation: (noteId: string, explanationId: string) => void;
+  removeSavedQuiz: (noteId: string, quizId: string) => void;
 }
 
 export const useNoteStore = create<NoteState>()(
@@ -173,6 +177,102 @@ export const useNoteStore = create<NoteState>()(
           updatedNotes[noteIndex] = updatedNote;
           
           return { notes: updatedNotes } as any;
+        });
+      },
+      
+      saveExplanationToNote: (noteId, explanation) => {
+        set(state => {
+          const noteIndex = state.notes.findIndex(note => note.id === noteId);
+          if (noteIndex === -1) return state;
+          
+          const updatedNote = { ...state.notes[noteIndex] };
+          
+          // Ensure the explanation has an ID if it doesn't already have one
+          const explanationToSave = {
+            ...explanation,
+            id: explanation.id || uuidv4()
+          };
+          
+          // Add the explanation to the note's savedExplanations array
+          updatedNote.savedExplanations = updatedNote.savedExplanations 
+            ? [...updatedNote.savedExplanations.filter(e => e.id !== explanationToSave.id), explanationToSave]
+            : [explanationToSave];
+          
+          updatedNote.updatedAt = new Date();
+          
+          const updatedNotes = [...state.notes];
+          updatedNotes[noteIndex] = updatedNote;
+          
+          return { notes: updatedNotes };
+        });
+      },
+      
+      saveQuizToNote: (noteId, quiz) => {
+        set(state => {
+          const noteIndex = state.notes.findIndex(note => note.id === noteId);
+          if (noteIndex === -1) return state;
+          
+          const updatedNote = { ...state.notes[noteIndex] };
+          
+          // Ensure the quiz has an ID if it doesn't already have one
+          const quizToSave = {
+            ...quiz,
+            id: quiz.id || uuidv4()
+          };
+          
+          // Add the quiz to the note's savedQuizzes array
+          updatedNote.savedQuizzes = updatedNote.savedQuizzes 
+            ? [...updatedNote.savedQuizzes.filter(q => q.id !== quizToSave.id), quizToSave]
+            : [quizToSave];
+          
+          updatedNote.updatedAt = new Date();
+          
+          const updatedNotes = [...state.notes];
+          updatedNotes[noteIndex] = updatedNote;
+          
+          return { notes: updatedNotes };
+        });
+      },
+      
+      removeSavedExplanation: (noteId, explanationId) => {
+        set(state => {
+          const noteIndex = state.notes.findIndex(note => note.id === noteId);
+          if (noteIndex === -1) return state;
+          
+          const updatedNote = { ...state.notes[noteIndex] };
+          if (!updatedNote.savedExplanations) return state;
+          
+          updatedNote.savedExplanations = updatedNote.savedExplanations.filter(
+            explanation => explanation.id !== explanationId
+          );
+          
+          updatedNote.updatedAt = new Date();
+          
+          const updatedNotes = [...state.notes];
+          updatedNotes[noteIndex] = updatedNote;
+          
+          return { notes: updatedNotes };
+        });
+      },
+      
+      removeSavedQuiz: (noteId, quizId) => {
+        set(state => {
+          const noteIndex = state.notes.findIndex(note => note.id === noteId);
+          if (noteIndex === -1) return state;
+          
+          const updatedNote = { ...state.notes[noteIndex] };
+          if (!updatedNote.savedQuizzes) return state;
+          
+          updatedNote.savedQuizzes = updatedNote.savedQuizzes.filter(
+            quiz => quiz.id !== quizId
+          );
+          
+          updatedNote.updatedAt = new Date();
+          
+          const updatedNotes = [...state.notes];
+          updatedNotes[noteIndex] = updatedNote;
+          
+          return { notes: updatedNotes };
         });
       }
     }),

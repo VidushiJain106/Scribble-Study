@@ -6,16 +6,18 @@ import { QuizContent } from "@/components/Quiz/QuizContent";
 import { ExplanationLoading } from "@/components/Explanation/ExplanationLoading"; 
 import { ExplanationError } from "@/components/Explanation/ExplanationError";
 import { useExplanationData } from "@/hooks/useExplanationData";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Page component for displaying explanations and quizzes
  */
 const ExplanationPage = () => {
   const { id: noteId } = useParams<{ id: string }>();
-  const notes = useNoteStore(state => state.notes);
+  const { notes, saveExplanationToNote, saveQuizToNote } = useNoteStore();
   const navigate = useNavigate();
   const [showQuiz, setShowQuiz] = useState(false);
   const [isGeneratingMoreQuestions, setIsGeneratingMoreQuestions] = useState(false);
+  const { toast } = useToast();
   
   const note = noteId ? notes.find(n => n.id === noteId) : null;
   const { 
@@ -71,6 +73,54 @@ const ExplanationPage = () => {
     }
   };
   
+  const handleSaveExplanation = () => {
+    if (!noteId || !explanation) return;
+    
+    try {
+      // Save the explanation to the note
+      saveExplanationToNote(noteId, explanation);
+      
+      toast({
+        title: "Success",
+        description: "Explanation saved to note",
+      });
+      
+      // Redirect to the resources page
+      navigate(`/note/${noteId}/resources`);
+    } catch (error) {
+      console.error("Error saving explanation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save explanation",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleSaveQuiz = () => {
+    if (!noteId || !quiz) return;
+    
+    try {
+      // Save the quiz to the note
+      saveQuizToNote(noteId, quiz);
+      
+      toast({
+        title: "Success",
+        description: "Question bank saved to note",
+      });
+      
+      // Redirect to the resources page
+      navigate(`/note/${noteId}/resources`);
+    } catch (error) {
+      console.error("Error saving quiz:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save question bank",
+        variant: "destructive",
+      });
+    }
+  };
+  
   if (loading && !isGeneratingMoreQuestions) {
     return <ExplanationLoading isGeneratingQuiz={showQuiz && !quiz} />;
   }
@@ -85,11 +135,13 @@ const ExplanationPage = () => {
       onComplete={handleCompleteQuiz} 
       onBackToExplanation={() => setShowQuiz(false)}
       onGenerateMoreQuestions={handleGenerateMoreQuestions}
+      onSaveQuiz={handleSaveQuiz}
     />
   ) : (
     <ExplanationContent 
       explanation={explanation} 
       onTakeQuiz={handleTakeQuiz} 
+      onSaveExplanation={handleSaveExplanation}
     />
   );
 };

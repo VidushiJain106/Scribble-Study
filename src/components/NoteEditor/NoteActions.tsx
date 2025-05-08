@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Lightbulb, Save, Trash } from "lucide-react";
+import { GraduationCap, Lightbulb, Save, Trash, BookOpen } from "lucide-react";
 import { FC } from "react";
 import { FileUploader } from "./FileUploader";
 import { Note } from "@/types";
@@ -41,6 +41,11 @@ export const NoteActions: FC<NoteActionsProps> = ({
   // Also check if we have enough content but no analysis yet
   const showAnalyzeButton = note.content && note.content.length > 50 && (!note.analysis || !note.analysis.readyForExplanation);
 
+  // Check if the note has saved resources
+  const hasSavedResources = 
+    (note.savedExplanations && note.savedExplanations.length > 0) || 
+    (note.savedQuizzes && note.savedQuizzes.length > 0);
+
   return (
     <>
       <div className="flex items-center justify-between p-4 border-b">
@@ -76,6 +81,18 @@ export const NoteActions: FC<NoteActionsProps> = ({
             onFileUpload={handleFileUpload} 
             onPdfTextExtracted={handlePdfTextExtracted}
           />
+          
+          {/* Resources button to navigate to resources page */}
+          <Button 
+            variant={hasSavedResources ? "default" : "outline"} 
+            size="icon" 
+            className={`rounded-full ${hasSavedResources ? 'bg-secondary text-secondary-foreground' : ''}`}
+            onClick={() => navigate(`/note/${noteId}/resources`)} 
+            aria-label="View saved resources"
+            title="View saved explanations and quizzes"
+          >
+            <BookOpen className="h-4 w-4" />
+          </Button>
           
           {/* Permanent Explain button that is highlighted when ready */}
           <Button 

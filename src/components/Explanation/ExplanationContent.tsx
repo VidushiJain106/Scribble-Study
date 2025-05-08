@@ -12,7 +12,9 @@ import {
   CheckSquare,
   List,
   AlignJustify,
-  Sparkles
+  Sparkles,
+  Save,
+  ExternalLink
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -21,9 +23,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface ExplanationContentProps {
   explanation: Explanation;
   onTakeQuiz: () => void;
+  onSaveExplanation?: () => void;
+  hideButtons?: boolean;
 }
 
-export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationContentProps) {
+export function ExplanationContent({ explanation, onTakeQuiz, onSaveExplanation, hideButtons = false }: ExplanationContentProps) {
   const [activeSection, setActiveSection] = useState<number | null>(null);
   const navigate = useNavigate();
   
@@ -140,6 +144,8 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
       setExamplesContent(null);
       setKidFriendlyContent(null);
       setActiveExplanationTab("standard");
+    } else {
+      setActiveSection(null);
     }
   };
   
@@ -150,64 +156,76 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
         <p className="text-muted-foreground">Created from your notes on {explanation.topic}</p>
       </div>
       
-      <div className="flex items-center gap-3 mb-8">
-        <Button
-          variant="outline"
-          onClick={handleBackToNote}
-          className="flex items-center gap-1"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Note
-        </Button>
-        <Button
-          onClick={onTakeQuiz}
-          className="flex items-center gap-2"
-        >
-          <HelpCircle className="h-5 w-5" />
-          Test Knowledge
-        </Button>
-      </div>
+      {!hideButtons && (
+        <div className="flex items-center gap-3 mb-8">
+          <Button
+            variant="outline"
+            onClick={handleBackToNote}
+            className="flex items-center gap-1"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Note
+          </Button>
+          <Button
+            onClick={onTakeQuiz}
+            className="flex items-center gap-2"
+          >
+            <HelpCircle className="h-5 w-5" />
+            Test Knowledge
+          </Button>
+          {onSaveExplanation && (
+            <Button
+              variant="secondary"
+              onClick={onSaveExplanation}
+              className="flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              Save Explanation
+            </Button>
+          )}
+        </div>
+      )}
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-1">
-          <Card className="p-4 sticky top-6">
-            <div className="flex items-center mb-4">
-              <ListTodo className="h-5 w-5 mr-2 text-primary" />
-              <h2 className="font-medium text-lg">Navigation</h2>
-            </div>
-            <div className="space-y-2">
-              {explanation.content.sections.map((section, idx) => {
-                // Use actual section titles but with icon categorization
-                let SectionIcon;
-                
-                if (idx === 0) {
-                  SectionIcon = BookOpen;
-                } else if (idx === explanation.content.sections.length - 1) {
-                  SectionIcon = CheckSquare;
-                } else {
-                  SectionIcon = FileText;
-                }
-                
-                return (
-                  <Button
-                    key={idx}
-                    variant={activeSection === idx ? "default" : "outline"}
-                    className="w-full justify-start text-left h-auto py-3 px-4 font-normal text-sm"
-                    onClick={() => handleSectionChange(idx)}
-                    title={section.title} // Add full title as tooltip
+          <div className="sticky top-6">
+            <Card className="overflow-hidden">
+              <div className="border-b px-4 py-3 bg-muted/50">
+                <h3 className="text-sm font-medium">Table of Contents</h3>
+              </div>
+              <div className="divide-y">
+                {explanation.content.sections.map((section, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSectionChange(index)}
+                    className={`px-4 py-3 text-left w-full hover:bg-accent transition-colors ${
+                      activeSection === index ? 'bg-accent' : ''
+                    }`}
                   >
-                    <SectionIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <div className="flex-1 overflow-hidden">
-                      <span className="truncate inline-block w-full">{section.title}</span>
-                      {section.title.length > 20 && (
-                        <span className="text-muted-foreground text-xs">...</span>
-                      )}
+                    <span className="text-sm">{section.title}</span>
+                  </button>
+                ))}
+              </div>
+            </Card>
+            
+            {explanation.content.furtherResources && explanation.content.furtherResources.length > 0 && (
+              <Card className="mt-4 overflow-hidden">
+                <div className="border-b px-4 py-3 bg-muted/50">
+                  <h3 className="text-sm font-medium">Further Reading</h3>
+                </div>
+                <div className="p-4 space-y-2">
+                  {explanation.content.furtherResources.map((resource, index) => (
+                    <div key={index} className="text-sm">
+                      <div className="flex items-start gap-2">
+                        <ExternalLink className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <span>{resource}</span>
+                      </div>
                     </div>
-                  </Button>
-                );
-              })}
-            </div>
-          </Card>
+                  ))}
+                </div>
+              </Card>
+            )}
+          </div>
         </div>
         
         <div className="md:col-span-3">
@@ -333,8 +351,12 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
               
               <h2 className="text-xl font-medium mb-4">Key Sections</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {explanation.content.sections.slice(1).map((section, idx) => (
-                  <Card key={idx} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleSectionChange(idx + 1)}>
+                {explanation.content.sections.slice(1).map((section, index) => (
+                  <Card 
+                    key={index + 1}
+                    className="p-5 hover:bg-accent/50 transition-colors cursor-pointer"
+                    onClick={() => handleSectionChange(index + 1)}
+                  >
                     <h3 className="font-medium mb-2">{section.title}</h3>
                     <p className="text-sm text-muted-foreground line-clamp-3">
                       {formatContent(section.content)[0]}

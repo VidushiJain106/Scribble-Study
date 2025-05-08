@@ -13,7 +13,7 @@ export function TabsContainer({
   activeTab, 
   setActiveTab, 
   textContent, 
-  drawContent 
+  drawContent
 }: TabsContainerProps) {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full overflow-hidden">
