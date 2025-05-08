@@ -120,7 +120,7 @@ serve(async (req) => {
               role: 'user',
               content: `Create an educational explanation for the topic: ${requestData.topic}
               
-              The key concepts involved are: ${requestData.concepts.join(', ')}
+              The key concepts involved are: ${requestData.concepts ? requestData.concepts.join(', ') : 'Various concepts related to the topic'}
               
               These notes were used as reference:
               "${requestData.noteContent}"`
@@ -140,9 +140,19 @@ serve(async (req) => {
       
       if (result.error) {
         console.error('OpenRouter API error:', result.error);
-        return new Response(JSON.stringify({ error: 'Error generating explanation' }), {
+        return new Response(JSON.stringify({ 
+          error: 'Error generating explanation',
+          title: "Error Processing Content", 
+          sections: [
+            {
+              title: "Error Generating Content",
+              content: "There was a problem generating the explanation. Please try again."
+            }
+          ],
+          summary: "Error generating content. Please try again."
+        }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
+          status: 200, // Return 200 with error info in content
         });
       }
       
@@ -155,6 +165,23 @@ serve(async (req) => {
         
         try {
           explanation = JSON.parse(content);
+          
+          // Validate the structure
+          if (!explanation.title || !Array.isArray(explanation.sections) || !explanation.summary) {
+            throw new Error("Invalid explanation structure");
+          }
+          
+          // Check if sections are properly formatted
+          explanation.sections = explanation.sections.map(section => {
+            if (typeof section !== 'object' || !section.title || !section.content) {
+              return {
+                title: section.title || "Section",
+                content: section.content || "Content not available"
+              };
+            }
+            return section;
+          });
+          
         } catch (parseError) {
           console.error('Error parsing JSON from LLM:', parseError);
           
@@ -168,7 +195,10 @@ serve(async (req) => {
               },
               {
                 title: "Key Concepts",
-                content: "The key concepts mentioned in your notes include: " + requestData.concepts.join(", ")
+                content: "The key concepts mentioned in your notes include: " + 
+                  (requestData.concepts && requestData.concepts.length > 0 
+                    ? requestData.concepts.join(", ") 
+                    : "various topics related to " + requestData.topic)
               }
             ],
             summary: "This is an automatically generated summary for " + requestData.topic + " since the AI's response couldn't be correctly parsed."

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { withSupabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { Explanation, Quiz } from "@/types";
@@ -13,6 +13,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const requestInProgressRef = useRef(false);
 
   /**
    * Always generate a new explanation directly
@@ -22,8 +23,15 @@ export function useExplanationData(noteId: string | undefined, note: any) {
       return null;
     }
 
+    // Prevent multiple concurrent requests
+    if (requestInProgressRef.current) {
+      console.log("Explanation request already in progress, skipping duplicate call");
+      return null;
+    }
+
     setLoading(true);
     setError(null);
+    requestInProgressRef.current = true;
     
     try {
       if (!isSupabaseConfigured()) {
@@ -32,7 +40,6 @@ export function useExplanationData(noteId: string | undefined, note: any) {
           description: "Cannot connect to Supabase. Please try again later.",
           variant: "destructive",
         });
-        setLoading(false);
         setError("Connection error");
         return null;
       }
@@ -43,7 +50,6 @@ export function useExplanationData(noteId: string | undefined, note: any) {
       const explanation = await withSupabase(
         async (supabase) => {
           try {
-            // Skip checking for existing explanations - always generate new
             console.log("Bypassing storage - generating fresh explanation");
             
             // Generate a new explanation
@@ -64,6 +70,12 @@ export function useExplanationData(noteId: string | undefined, note: any) {
             if (!data) {
               throw new Error("No data returned from explanation function");
             }
+
+            // Check for error property in the data
+            if (data.error) {
+              console.error("Error in explanation data:", data.error);
+              throw new Error(data.error);
+            }
             
             return {
               id: crypto.randomUUID(),
@@ -72,9 +84,9 @@ export function useExplanationData(noteId: string | undefined, note: any) {
               title: data.title,
               content: {
                 title: data.title,
-                sections: data.sections,
-                summary: data.summary,
-                furtherResources: data.furtherResources
+                sections: data.sections || [],
+                summary: data.summary || "No summary available",
+                furtherResources: data.furtherResources || []
               },
               createdAt: new Date()
             };
@@ -87,7 +99,6 @@ export function useExplanationData(noteId: string | undefined, note: any) {
       );
       
       if (explanation) {
-        // Explicitly cast to Explanation type to ensure type safety
         setExplanation(explanation as Explanation);
         setError(null);
         return explanation as Explanation;
@@ -109,6 +120,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
       setError("Error generating explanation");
     } finally {
       setLoading(false);
+      requestInProgressRef.current = false;
     }
     
     return null;
@@ -118,7 +130,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
    * Generate a new quiz each time without checking storage
    */
   const generateQuiz = async () => {
-    if (!noteId || !explanation) return;
+    if (!noteId || !explanation) return null;
     
     setLoading(true);
     
@@ -129,8 +141,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
           description: "Cannot connect to Supabase. Please try again later.",
           variant: "destructive",
         });
-        setLoading(false);
-        return;
+        return null;
       }
       
       console.log("Directly generating new quiz for note:", noteId);
@@ -139,7 +150,6 @@ export function useExplanationData(noteId: string | undefined, note: any) {
       const quiz = await withSupabase(
         async (supabase) => {
           try {
-            // Skip checking for existing quiz - always generate new
             console.log("Bypassing storage - generating fresh quiz");
             
             // Generate a new quiz
@@ -159,13 +169,19 @@ export function useExplanationData(noteId: string | undefined, note: any) {
             if (!data) {
               throw new Error("No data returned from quiz function");
             }
+
+            // Check for error property in the data
+            if (data.error) {
+              console.error("Error in quiz data:", data.error);
+              throw new Error(data.error);
+            }
             
             return {
               id: crypto.randomUUID(),
               noteId,
               topic: explanation.topic,
-              introduction: data.introduction,
-              questions: data.questions,
+              introduction: data.introduction || `Quiz on ${explanation.topic}`,
+              questions: data.questions || [],
               createdAt: new Date()
             };
           } catch (error) {
@@ -177,7 +193,6 @@ export function useExplanationData(noteId: string | undefined, note: any) {
       );
       
       if (quiz) {
-        // Explicitly cast to Quiz type to ensure type safety
         setQuiz(quiz as Quiz);
         return quiz as Quiz;
       } else {

@@ -56,6 +56,19 @@ export function ExplanationError({
     }
   };
   
+  const getErrorDetails = () => {
+    if (errorMessage && (errorType === "api-error" || errorType === "generic")) {
+      if (typeof errorMessage === 'string' && errorMessage.length > 0) {
+        return (
+          <div className="bg-destructive/5 p-4 rounded-md text-sm text-left mt-4 mb-6 max-w-md mx-auto overflow-auto">
+            <p className="font-mono text-xs text-destructive/80">{errorMessage}</p>
+          </div>
+        );
+      }
+    }
+    return null;
+  };
+  
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-120px)] p-8">
       <div className="container max-w-lg mx-auto p-8 text-center bg-card/50 backdrop-blur-sm rounded-lg shadow-lg">
@@ -63,7 +76,10 @@ export function ExplanationError({
           <AlertTriangle className="h-10 w-10 text-destructive" />
         </div>
         <h1 className="text-3xl font-bold mb-4">{getErrorMessage()}</h1>
-        <p className="text-muted-foreground mb-8 text-lg">{getErrorDescription()}</p>
+        <p className="text-muted-foreground mb-4 text-lg">{getErrorDescription()}</p>
+        
+        {getErrorDetails()}
+        
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button 
             onClick={() => navigate(noteId ? `/note/${noteId}` : '/')} 

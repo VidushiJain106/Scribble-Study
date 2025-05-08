@@ -1,13 +1,12 @@
 
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNoteStore } from "@/lib/store";
 import { ExplanationContent } from "@/components/Explanation/ExplanationContent";
 import { QuizContent } from "@/components/Quiz/QuizContent";
 import { ExplanationLoading } from "@/components/Explanation/ExplanationLoading"; 
 import { ExplanationError } from "@/components/Explanation/ExplanationError";
 import { useExplanationData } from "@/hooks/useExplanationData";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +21,7 @@ const ExplanationPage = () => {
   const [showQuiz, setShowQuiz] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
+  const initialFetchDoneRef = useRef(false);
   
   // Find the note in the store
   const note = noteId ? notes.find(n => n.id === noteId) : null;
@@ -34,6 +34,21 @@ const ExplanationPage = () => {
     fetchExplanation, 
     generateQuiz 
   } = useExplanationData(noteId, note);
+  
+  // Memoize fetchExplanation to avoid redundant calls
+  const handleFetchExplanation = useCallback(async () => {
+    console.log("Triggering explanation fetch");
+    try {
+      await fetchExplanation();
+    } catch (error) {
+      console.error("Error during explanation fetch:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate explanation. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [fetchExplanation, toast]);
   
   // Effect to handle fetching explanation or redirecting if note isn't ready
   useEffect(() => {
@@ -53,31 +68,18 @@ const ExplanationPage = () => {
     }
     
     // Only fetch on initial load or explicit retry
-    if (retryCount === 0) {
+    if (!initialFetchDoneRef.current || retryCount > 0) {
+      initialFetchDoneRef.current = true;
       console.log("Initial explanation fetch");
-      fetchExplanation().catch((error) => {
-        console.error("Error during explanation fetch:", error);
-        toast({
-          title: "Error",
-          description: "Failed to generate explanation. Please try again.",
-          variant: "destructive",
-        });
-      });
+      handleFetchExplanation();
     }
-  }, [noteId, note, navigate, fetchExplanation, retryCount, toast]);
+  }, [noteId, note, navigate, handleFetchExplanation, retryCount]);
   
   // Handle manual retry
   const handleRetry = () => {
     setRetryCount(prevCount => prevCount + 1);
     console.log("Retrying explanation generation");
-    fetchExplanation().catch((error) => {
-      console.error("Error during retry:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate explanation. Please try again later.",
-        variant: "destructive",
-      });
-    });
+    handleFetchExplanation();
   };
   
   const handleTakeQuiz = async () => {
@@ -113,22 +115,12 @@ const ExplanationPage = () => {
     
     if (error) {
       return (
-        <div className="max-w-5xl mx-auto p-6">
-          <Alert variant="destructive" className="mb-6">
-            <AlertTitle>Failed to load explanation</AlertTitle>
-            <AlertDescription>
-              There was a problem generating the explanation. This feature bypasses database storage and always creates new explanations.
-            </AlertDescription>
-          </Alert>
-          
-          <Button 
-            onClick={handleRetry} 
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Try Again
-          </Button>
-        </div>
+        <ExplanationError 
+          noteId={noteId} 
+          errorType="api-error" 
+          onRetry={handleRetry}
+          errorMessage={error}
+        />
       );
     }
     
