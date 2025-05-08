@@ -54,7 +54,9 @@ export function RichTextEditor({
       Underline,
       TextStyle,
       Color,
-      Highlight,
+      Highlight.configure({
+        multicolor: true,
+      }),
       FontFamily,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
@@ -173,20 +175,6 @@ export function RichTextEditor({
           }
           
           setIconPos({ x, y });
-          
-          // Auto-generate explanation for longer text
-          if (text.length > 5) {
-            setExplanation('Generating explanation...');
-            const explainSnippet = useChatStore.getState().explainSnippet;
-            
-            // Use async/await to handle the promise
-            const getExplanation = async () => {
-              const exp = await explainSnippet(text);
-              setExplanation(exp);
-            };
-            
-            getExplanation();
-          }
         }
       } catch (e) {
         console.error("Error handling selection:", e);

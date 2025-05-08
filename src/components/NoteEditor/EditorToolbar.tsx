@@ -68,7 +68,7 @@ export function EditorToolbar({ editor, setIsTableMenuOpen, setIsColorMenuOpen }
       editor
         .chain()
         .focus()
-        .setImage({ src: imageUrl, alt: imageAlt })
+        .setImage({ src: imageUrl, alt: imageAlt || '' })
         .run();
 
       // Close popover and reset
@@ -85,36 +85,32 @@ export function EditorToolbar({ editor, setIsTableMenuOpen, setIsColorMenuOpen }
         <ToggleGroupItem 
           value="bold" 
           size="sm" 
-          pressed={editor.isActive('bold')}
-          onClick={() => editor.chain().focus().toggleBold().run()}
           aria-label="Bold"
+          onClick={() => editor.chain().focus().toggleBold().run()}
         >
           <Bold className="h-4 w-4" />
         </ToggleGroupItem>
         <ToggleGroupItem 
           value="italic" 
           size="sm"
-          pressed={editor.isActive('italic')}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
           aria-label="Italic"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           <Italic className="h-4 w-4" />
         </ToggleGroupItem>
         <ToggleGroupItem 
           value="underline" 
           size="sm"
-          pressed={editor.isActive('underline')}
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
           aria-label="Underline"
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
           <Underline className="h-4 w-4" />
         </ToggleGroupItem>
         <ToggleGroupItem 
           value="strikethrough" 
           size="sm"
-          pressed={editor.isActive('strike')}
-          onClick={() => editor.chain().focus().toggleStrike().run()}
           aria-label="Strikethrough"
+          onClick={() => editor.chain().focus().toggleStrike().run()}
         >
           <Strikethrough className="h-4 w-4" />
         </ToggleGroupItem>
