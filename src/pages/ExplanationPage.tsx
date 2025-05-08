@@ -27,7 +27,17 @@ const ExplanationPage = () => {
   } = useExplanationData(noteId, note);
   
   useEffect(() => {
-    if (!note || !note.analysis || !note.analysis.readyForExplanation) {
+    if (!note) {
+      // If note isn't found, we need to wait a bit to see if it loads
+      const timer = setTimeout(() => {
+        if (!note) {
+          navigate(`/note/${noteId}`);
+        }
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+    
+    if (note && (!note.analysis || !note.analysis.readyForExplanation)) {
       navigate(`/note/${noteId}`);
       return;
     }
@@ -51,7 +61,7 @@ const ExplanationPage = () => {
       {loading ? (
         <ExplanationLoading isGeneratingQuiz={showQuiz && !quiz} />
       ) : !note || !explanation ? (
-        <ExplanationError />
+        <ExplanationError noteId={noteId} errorType={!note ? "not-found" : "generic"} />
       ) : (
         showQuiz && quiz ? (
           <QuizContent 

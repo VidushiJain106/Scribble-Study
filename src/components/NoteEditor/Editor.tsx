@@ -87,6 +87,7 @@ export function Editor({ noteId }: EditorProps) {
           title={title}
           setTitle={setTitle}
           note={note}
+          content={content} // Pass content to NoteActions
           isAnalyzing={isAnalyzing}
           isSaving={isSaving}
           handleSave={handleSave}

@@ -12,6 +12,7 @@ interface NoteActionsProps {
   title: string;
   setTitle: (title: string) => void;
   note: Note | null;
+  content: string; // Add content to props
   isAnalyzing: boolean;
   isSaving?: boolean;
   handleSave: (title: string, content: string) => Promise<void>;
@@ -26,6 +27,7 @@ export const NoteActions: FC<NoteActionsProps> = ({
   title,
   setTitle,
   note,
+  content, // Add content to the destructured props
   isAnalyzing,
   isSaving = false,
   handleSave,
@@ -40,7 +42,7 @@ export const NoteActions: FC<NoteActionsProps> = ({
   const showExplainButton = note && note.analysis && note.analysis.readyForExplanation;
   
   // Also check if we have enough content but no analysis yet
-  const showAnalyzeButton = note && note.content && note.content.length > 50 && (!note.analysis || !note.analysis.readyForExplanation);
+  const showAnalyzeButton = note && content && content.length > 50 && (!note.analysis || !note.analysis.readyForExplanation);
 
   return (
     <>
@@ -92,7 +94,7 @@ export const NoteActions: FC<NoteActionsProps> = ({
             variant="outline" 
             size="icon" 
             className="rounded-full" 
-            onClick={() => handleSave(title, note?.content || "")} 
+            onClick={() => handleSave(title, content)} 
             aria-label="Save note"
             disabled={isSaving || !note}
           >
