@@ -6,12 +6,14 @@ import { Note } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { FileImage, Pen, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function NoteList({ category }: { category?: string }) {
   const notes = useNoteStore(state => state.notes);
   const createNote = useNoteStore(state => state.createNote);
   const categoryItems = useCategoryStore(state => state.categoryItems);
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   // Get all subcategories for a category
   const getAllSubcategories = (categoryName: string): string[] => {
@@ -37,9 +39,14 @@ export function NoteList({ category }: { category?: string }) {
       })
     : notes;
   
-  const handleCreateNote = () => {
-    const newNoteId = createNote(category as any);
-    navigate(`/note/${newNoteId}`);
+  const handleCreateNote = async () => {
+    if (!user) return;
+    try {
+      const newNoteId = await createNote(category as any);
+      navigate(`/note/${newNoteId}`);
+    } catch (error) {
+      console.error("Error creating note:", error);
+    }
   };
   
   const handleNoteClick = (noteId: string) => {
@@ -72,6 +79,12 @@ export function NoteList({ category }: { category?: string }) {
           onClick={() => handleNoteClick(note.id)} 
         />
       ))}
+
+      {filteredNotes.length === 0 && (
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
+          <p className="text-muted-foreground">No notes found in this category.</p>
+        </div>
+      )}
     </div>
   );
 }

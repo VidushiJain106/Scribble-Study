@@ -5,7 +5,8 @@ import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sid
 import { useNoteStore } from "@/lib/store";
 import { Menu } from "lucide-react";
 import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Create a component for the floating trigger that will be conditionally rendered
 const FloatingSidebarTrigger = () => {
@@ -26,6 +27,12 @@ const FloatingSidebarTrigger = () => {
 const NotePage = () => {
   const { id } = useParams<{ id: string }>();
   const setActiveNote = useNoteStore(state => state.setActiveNote);
+  const { user, loading } = useAuth();
+  
+  // Redirect to login if not authenticated
+  if (!loading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
   
   // Set the active note ID when this page loads
   useEffect(() => {

@@ -42,6 +42,7 @@ export interface Attachment {
   type: "image" | "pdf";
   url: string;
   thumbnailUrl?: string;
+  size?: number; // Now explicitly optional
   createdAt: Date;
 }
 

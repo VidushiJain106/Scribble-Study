@@ -1,18 +1,34 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 interface ExplanationErrorProps {
   noteId?: string;
-  errorType?: "not-found" | "not-ready" | "generic";
+  errorType?: "not-found" | "not-ready" | "api-error" | "generic";
+  onRetry?: () => void;
+  errorMessage?: string;
 }
 
 export function ExplanationError({ 
   noteId, 
-  errorType = "generic" 
+  errorType = "generic",
+  onRetry,
+  errorMessage
 }: ExplanationErrorProps) {
   const navigate = useNavigate();
+  
+  const handleRetry = () => {
+    toast({
+      title: "Retrying",
+      description: "Generating a new explanation..."
+    });
+    
+    if (onRetry) {
+      onRetry();
+    }
+  };
   
   const getErrorMessage = () => {
     switch (errorType) {
@@ -20,8 +36,10 @@ export function ExplanationError({
         return "Note not found";
       case "not-ready":
         return "This note isn't ready for explanation yet";
+      case "api-error":
+        return "AI service connection error";
       default:
-        return "Unable to load explanation";
+        return "Unable to generate explanation";
     }
   };
   
@@ -31,22 +49,60 @@ export function ExplanationError({
         return "We couldn't find the note you're looking for.";
       case "not-ready":
         return "Try adding more content to your note so it can be analyzed properly.";
+      case "api-error":
+        return errorMessage || "There was a problem connecting to the AI service. Please try again.";
       default:
-        return "There was a problem loading the explanation. Please try again later.";
+        return errorMessage || "There was a problem generating the explanation. Please try again.";
     }
   };
   
+  const getErrorDetails = () => {
+    if (errorMessage && (errorType === "api-error" || errorType === "generic")) {
+      if (typeof errorMessage === 'string' && errorMessage.length > 0) {
+        return (
+          <div className="bg-destructive/5 p-4 rounded-md text-sm text-left mt-4 mb-6 max-w-md mx-auto overflow-auto">
+            <p className="font-mono text-xs text-destructive/80">{errorMessage}</p>
+          </div>
+        );
+      }
+    }
+    return null;
+  };
+  
   return (
-    <div className="container max-w-3xl mx-auto py-12 px-4 text-center">
-      <h1 className="text-2xl font-bold mb-2">{getErrorMessage()}</h1>
-      <p className="text-muted-foreground mb-6">{getErrorDescription()}</p>
-      <Button 
-        onClick={() => navigate(noteId ? `/note/${noteId}` : '/')} 
-        className="flex items-center gap-1"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        {noteId ? "Return to note" : "Return to notes"}
-      </Button>
+    <div className="flex items-center justify-center min-h-[calc(100vh-120px)] p-8">
+      <div className="container max-w-lg mx-auto p-8 text-center bg-card/50 backdrop-blur-sm rounded-lg shadow-lg">
+        <div className="bg-destructive/10 p-6 rounded-full w-20 h-20 mx-auto mb-8 flex items-center justify-center">
+          <AlertTriangle className="h-10 w-10 text-destructive" />
+        </div>
+        <h1 className="text-3xl font-bold mb-4">{getErrorMessage()}</h1>
+        <p className="text-muted-foreground mb-4 text-lg">{getErrorDescription()}</p>
+        
+        {getErrorDetails()}
+        
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button 
+            onClick={() => navigate(noteId ? `/note/${noteId}` : '/')} 
+            className="flex items-center gap-2"
+            size="lg"
+            variant="outline"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            {noteId ? "Return to note" : "Return to notes"}
+          </Button>
+          
+          {onRetry && (
+            <Button 
+              onClick={handleRetry} 
+              className="flex items-center gap-2"
+              size="lg"
+            >
+              <RefreshCw className="h-5 w-5" />
+              Try again
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Lightbulb, Save, Trash } from "lucide-react";
+import { GraduationCap, Lightbulb, Save, Trash, Loader2 } from "lucide-react";
 import { FC } from "react";
 import { FileUploader } from "./FileUploader";
 import { Note } from "@/types";
@@ -10,9 +10,11 @@ interface NoteActionsProps {
   noteId: string;
   title: string;
   setTitle: (title: string) => void;
-  note: Note;
+  note: Note | null;
+  content: string; // Add content to props
   isAnalyzing: boolean;
-  handleSave: () => void;
+  isSaving?: boolean;
+  handleSave: (title: string, content: string) => Promise<void>;
   deleteNote: (id: string) => void;
   handleFileUpload: (attachment: any) => void;
   handlePdfTextExtracted?: (text: string) => void;
@@ -25,7 +27,9 @@ export const NoteActions: FC<NoteActionsProps> = ({
   title,
   setTitle,
   note,
+  content, // Add content to the destructured props
   isAnalyzing,
+  isSaving = false,
   handleSave,
   deleteNote,
   handleFileUpload,
@@ -36,10 +40,10 @@ export const NoteActions: FC<NoteActionsProps> = ({
   const navigate = useNavigate();
   
   // Check if the note has analysis data and is ready for explanation
-  const showExplainButton = note.analysis && note.analysis.readyForExplanation;
+  const showExplainButton = note && note.analysis && note.analysis.readyForExplanation;
   
   // Also check if we have enough content but no analysis yet
-  const showAnalyzeButton = note.content && note.content.length > 50 && (!note.analysis || !note.analysis.readyForExplanation);
+  const showAnalyzeButton = note && content && content.length > 50 && (!note.analysis || !note.analysis.readyForExplanation);
 
   return (
     <>
@@ -85,6 +89,7 @@ export const NoteActions: FC<NoteActionsProps> = ({
             onClick={handleExplainClick} 
             aria-label="Explain note"
             title={showExplainButton ? "Explanation ready!" : "Not enough content for explanation"}
+            disabled={!note}
           >
             <Lightbulb className="h-4 w-4" />
           </Button>
@@ -93,10 +98,11 @@ export const NoteActions: FC<NoteActionsProps> = ({
             variant="outline" 
             size="icon" 
             className="rounded-full" 
-            onClick={handleSave} 
+            onClick={() => handleSave(title, content)} 
             aria-label="Save note"
+            disabled={isSaving || !note}
           >
-            <Save className="h-4 w-4" />
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           </Button>
           
           <Button 
@@ -105,13 +111,12 @@ export const NoteActions: FC<NoteActionsProps> = ({
             className="rounded-full text-destructive hover:text-destructive" 
             onClick={() => deleteNote(noteId)} 
             aria-label="Delete note"
+            disabled={!note}
           >
             <Trash className="h-4 w-4" />
           </Button>
         </div>
       </div>
-      
-      {/* Remove the prominent explain button section since we now have a permanent button in the header */}
     </>
   );
 };

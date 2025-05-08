@@ -18,7 +18,8 @@ import LandingPage from "./pages/LandingPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AuthPage from "./pages/AuthPage";
 import { isSupabaseConfigured } from "./lib/supabaseClient";
-import { useAuth } from "./contexts/AuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
+import ProfilePage from "./pages/ProfilePage";
 
 // Add console logging for debugging Supabase configuration
 console.log("Supabase Configuration Check:", {
@@ -39,8 +40,6 @@ console.log('App component initialized');
 
 // Wrap each major section in error boundaries
 const App = () => {
-  const { user, loading } = useAuth();
-
   // Configure error handling for uncaught promises
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
@@ -65,88 +64,99 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <ErrorBoundary>
-            <BrowserRouter>
-              <ErrorBoundary>
-                <Routes>
-                  {/* Landing page becomes the root route */}
-                  <Route path="/" element={
-                    <ErrorBoundary>
-                      <LandingPage />
-                    </ErrorBoundary>
-                  } />
-                  
-                  {/* Auth page */}
-                  <Route path="/auth" element={
-                    <ErrorBoundary>
-                      <AuthPage />
-                    </ErrorBoundary>
-                  } />
-                  
-                  {/* App routes */}
-                  <Route path="/app" element={
-                    <ErrorBoundary>
-                      <ProtectedRoute>
-                        <Index />
-                      </ProtectedRoute>
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/category/:category" element={
-                    <ErrorBoundary>
-                      <ProtectedRoute>
-                        <Index />
-                      </ProtectedRoute>
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/note/:id" element={
-                    <ErrorBoundary>
-                      <ProtectedRoute>
-                        <NotePage />
-                      </ProtectedRoute>
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/note/:id/explanation" element={
-                    <ErrorBoundary>
-                      <ProtectedRoute>
-                        <ExplanationPage />
-                      </ProtectedRoute>
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/focus" element={
-                    <ErrorBoundary>
-                      <ProtectedRoute>
-                        <FocusMode />
-                      </ProtectedRoute>
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/documents" element={
-                    <ErrorBoundary>
-                      <ProtectedRoute>
-                        <DocumentsPage />
-                      </ProtectedRoute>
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/exam-prep" element={
-                    <ErrorBoundary>
-                      <ProtectedRoute>
-                        <ExamPrepPage />
-                      </ProtectedRoute>
-                    </ErrorBoundary>
-                  } />
-                  <Route path="*" element={
-                    <ErrorBoundary>
-                      <NotFound />
-                    </ErrorBoundary>
-                  } />
-                </Routes>
+          <AuthProvider>
+            <ErrorBoundary>
+              <BrowserRouter>
                 <ErrorBoundary>
-                  <Chatbot />
+                  <Routes>
+                    {/* Landing page becomes the root route */}
+                    <Route path="/" element={
+                      <ErrorBoundary>
+                        <LandingPage />
+                      </ErrorBoundary>
+                    } />
+                    
+                    {/* Auth page */}
+                    <Route path="/auth" element={
+                      <ErrorBoundary>
+                        <AuthPage />
+                      </ErrorBoundary>
+                    } />
+                    
+                    {/* Profile page */}
+                    <Route path="/profile" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <ProfilePage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    
+                    {/* App routes */}
+                    <Route path="/app" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <Index />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/category/:category" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <Index />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/note/:id" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <NotePage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/note/:id/explanation" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <ExplanationPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/focus" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <FocusMode />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/documents" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <DocumentsPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/exam-prep" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <ExamPrepPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="*" element={
+                      <ErrorBoundary>
+                        <NotFound />
+                      </ErrorBoundary>
+                    } />
+                  </Routes>
+                  <ErrorBoundary>
+                    <Chatbot />
+                  </ErrorBoundary>
+                  <Toaster />
+                  <Sonner />
                 </ErrorBoundary>
-                <Toaster />
-                <Sonner />
-              </ErrorBoundary>
-            </BrowserRouter>
-          </ErrorBoundary>
+              </BrowserRouter>
+            </ErrorBoundary>
+          </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>

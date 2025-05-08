@@ -1,178 +1,56 @@
 import { useNoteStore } from "@/lib/store";
-import { useChatStore } from "@/lib/chatStore";
-import { DrawPath, Note, Attachment } from "@/types";
-import { useEffect, useState, CSSProperties } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNoteState } from "./useNoteState";
+import { useNoteAnalysis } from "./useNoteAnalysis";
+import { useNoteSave } from "./useNoteSave";
+import { useNoteAttachments } from "./useNoteAttachments";
 
 export function useNoteEditor(noteId: string) {
-  const notes = useNoteStore(state => state.notes);
-  const updateNote = useNoteStore(state => state.updateNote);
-  const deleteNote = useNoteStore(state => state.deleteNote);
-  const addDrawingToNote = useNoteStore(state => state.addDrawingToNote);
-  const addAttachmentToNote = useNoteStore(state => state.addAttachmentToNote);
-  const removeAttachmentFromNote = useNoteStore(state => state.removeAttachmentFromNote);
-  const analyzeNote = useChatStore(state => state.analyzeNote);
+  const isLoading = useNoteStore(state => state.isLoading);
+  const { user } = useAuth();
   
-  const [note, setNote] = useState<Note | null>(null);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
   const [activeTab, setActiveTab] = useState("text");
-  const [textFormatting, setTextFormatting] = useState<CSSProperties>({});
-  const [analysisTimer, setAnalysisTimer] = useState<NodeJS.Timeout | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  
   const navigate = useNavigate();
-  const { toast } = useToast();
 
-  // Load note data
+  // Redirect if no user is found
   useEffect(() => {
-    const foundNote = notes.find(n => n.id === noteId);
-    if (foundNote) {
-      setNote(foundNote);
-      setTitle(foundNote.title);
-      setContent(foundNote.content);
+    if (!user) {
+      navigate('/auth');
     }
-  }, [noteId, notes]);
+  }, [user, navigate]);
 
-  // Auto-analyze note content when it changes
-  useEffect(() => {
-    if (!note) return;
+  // Get note state from custom hook - always call hooks regardless of conditions
+  const noteState = useNoteState(noteId);
+  
+  // Get analysis functionality from custom hook - always call regardless of conditions
+  const noteAnalysis = useNoteAnalysis(noteState.note, noteState.content);
 
-    // Clear previous timer
-    if (analysisTimer) {
-      clearTimeout(analysisTimer);
-    }
+  // Get save functionality from custom hook - always call regardless of conditions
+  const noteSave = useNoteSave(noteId);
 
-    // Only analyze if there's significant content
-    if (content.length > 50) {
-      setAnalysisTimer(setTimeout(() => {
-        setIsAnalyzing(true);
-        const updatedNote = {
-          ...note,
-          content
-        };
-        analyzeNote(updatedNote);
-        setIsAnalyzing(false);
-      }, 5000)); // Wait 5 seconds after typing stops
-    }
-
-    return () => {
-      if (analysisTimer) {
-        clearTimeout(analysisTimer);
-      }
-    };
-  }, [content, note, analyzeNote]);
-
-  // Save note changes
-  const handleSave = () => {
-    if (!note) return;
-    updateNote(noteId, {
-      title,
-      content
-    });
-    toast({
-      title: "Note saved",
-      description: "Your changes have been saved"
-    });
-  };
-
-  // Handle drawing completion
-  const handleDrawingComplete = (paths: DrawPath[]) => {
-    if (!note) return;
-    addDrawingToNote(noteId, paths);
-    toast({
-      title: "Drawing saved",
-      description: "Your drawing has been added to the note"
-    });
-  };
-
-  // Handle file upload
-  const handleFileUpload = (attachment: Omit<Attachment, "id" | "createdAt">) => {
-    if (!note) return;
-    addAttachmentToNote(noteId, attachment);
-  };
-
-  // Handle PDF text extraction
-  const handlePdfTextExtracted = (extractedText: string) => {
-    if (!note) return;
-    
-    // Append the extracted text to the note content with a separator
-    const updatedContent = content + 
-      (content ? '\n\n--- Extracted from PDF ---\n\n' : '--- Extracted from PDF ---\n\n') +
-      extractedText;
-    
-    // Update the content state
-    setContent(updatedContent);
-    
-    // Save the updated content immediately
-    updateNote(noteId, {
-      title,
-      content: updatedContent
-    });
-    
-    toast({
-      title: "PDF text added",
-      description: "Text from the PDF has been added to your note"
-    });
-  };
-
-  // Handle delete attachment
-  const handleDeleteAttachment = (attachmentId: string) => {
-    if (!note) return;
-    removeAttachmentFromNote(noteId, attachmentId);
-    toast({
-      title: "Attachment removed",
-      description: "The attachment has been removed from the note"
-    });
-  };
-
-  // Handle text formatting
-  const handleFormatChange = (formatType: string, value: any) => {
-    setTextFormatting(prev => ({
-      ...prev,
-      [formatType]: value
-    }));
-  };
+  // Get attachment functionality from custom hook - always call regardless of conditions
+  const noteAttachments = useNoteAttachments(noteId);
 
   const handleExplainClick = () => {
     navigate(`/note/${noteId}/explanation`);
   };
 
-  const forceAnalysis = () => {
-    if (!note) return;
-    setIsAnalyzing(true);
-    const updatedNote = {
-      ...note,
-      content
-    };
-    analyzeNote(updatedNote);
-    setIsAnalyzing(false);
-    
-    toast({
-      title: "Analysis requested",
-      description: "Your note is being analyzed..."
-    });
-  };
-
+  // Return all properties from the hooks
   return {
-    note,
-    title,
-    setTitle,
-    content,
-    setContent,
+    ...noteState,
     activeTab,
     setActiveTab,
-    textFormatting,
-    isAnalyzing,
-    handleSave,
-    handleDrawingComplete,
-    handleFileUpload,
-    handlePdfTextExtracted,
-    handleDeleteAttachment,
-    handleFormatChange,
+    isAnalyzing: noteAnalysis.isAnalyzing,
+    isLoading,
+    isSaving: noteSave.isSaving,
+    handleSave: (title: string, content: string) => noteSave.handleSave(title, content),
+    handleDrawingComplete: noteAttachments.handleDrawingComplete,
+    handleFileUpload: noteAttachments.handleFileUpload,
+    handleDeleteAttachment: noteAttachments.handleDeleteAttachment,
     handleExplainClick,
-    forceAnalysis,
-    deleteNote
+    forceAnalysis: noteAnalysis.forceAnalysis,
+    deleteNote: noteSave.deleteNote
   };
 }
