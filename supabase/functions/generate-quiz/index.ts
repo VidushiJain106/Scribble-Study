@@ -190,8 +190,7 @@ serve(async (req) => {
           };
         }
         
-        // Skip storing the quiz in Supabase - we bypass database storage
-        console.log('Successfully generated quiz, bypassing database storage');
+        console.log('Successfully generated quiz');
         
         return new Response(JSON.stringify(quiz), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

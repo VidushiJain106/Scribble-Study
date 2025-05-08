@@ -205,8 +205,7 @@ serve(async (req) => {
           };
         }
         
-        // Skip storing the explanation in Supabase - we bypass database storage
-        console.log('Successfully generated explanation, bypassing database storage');
+        console.log('Successfully generated explanation');
         
         return new Response(JSON.stringify(explanation), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
