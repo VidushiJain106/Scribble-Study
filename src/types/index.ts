@@ -141,6 +141,8 @@ export interface ChatState {
   markAsRead: () => void;
   setLoading: (loading: boolean) => void;
   analyzeNote: (note: Note) => void;
+  explainSnippet: (snippet: string) => Promise<string>;
+  explainForMiddleSchooler: (snippet: string) => Promise<string>;
 }
 
 // New types for LLM-powered features

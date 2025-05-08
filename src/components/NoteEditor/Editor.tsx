@@ -1,7 +1,6 @@
-
 import { Textarea } from "@/components/ui/textarea";
 import { DrawPath } from "@/types";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { FontFormatBar } from "./FontFormatBar";
 import { useNoteEditor } from "@/hooks/useNoteEditor";
@@ -9,6 +8,10 @@ import { NoteActions } from "./NoteActions";
 import { TabsContainer } from "./TabsContainer";
 import { AttachmentGallery } from "./AttachmentGallery";
 import { FloatingExplainButton } from "./FloatingExplainButton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Lightbulb } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useChatStore } from "@/lib/chatStore";
 
 interface EditorProps {
   noteId: string;
@@ -35,12 +38,102 @@ export function Editor({ noteId }: EditorProps) {
     deleteNote
   } = useNoteEditor(noteId);
 
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const [selectedText, setSelectedText] = useState("");
+  const [iconPos, setIconPos] = useState<{ x: number; y: number } | null>(null);
+  const [openSummary, setOpenSummary] = useState(false);
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [middleSchoolExplanation, setMiddleSchoolExplanation] = useState<string | null>(null);
+
+  const generateSummary = (text: string) => {
+    // Very naive placeholder summary logic
+    if (text.length <= 100) return text;
+    return text.substring(0, 100) + "...";
+  };
+
+  const handleExplainSelected = () => {
+    const explainSnippet = useChatStore.getState().explainSnippet;
+    setExplanation('Generating explanation...');
+    explainSnippet(selectedText).then(exp => setExplanation(exp));
+  };
+
+  const handleMiddleSchoolExplain = () => {
+    const explainForMiddleSchooler = useChatStore.getState().explainForMiddleSchooler;
+    setMiddleSchoolExplanation('Generating middle school explanation...');
+    explainForMiddleSchooler(selectedText).then(exp => setMiddleSchoolExplanation(exp));
+  };
+
   // Setup effect to automatically trigger analysis when content changes
   // This is a placeholder - the actual logic is in the useNoteEditor hook
   useEffect(() => {
     // Left intentionally empty as the logic is now in the hook
   }, []);
   
+  // Listen to selection changes to position icon next to highlight
+  useEffect(() => {
+    const handleSelection = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) {
+        setSelectedText("");
+        setIconPos(null);
+        setExplanation(null);
+        return;
+      }
+      if (!editorRef.current || !editorRef.current.contains(sel.anchorNode)) {
+        setSelectedText("");
+        setIconPos(null);
+        setExplanation(null);
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      if (rect) {
+        const text = sel.toString().trim();
+        if (text.length) {
+          setSelectedText(text);
+          
+          // Calculate position with viewport boundary checks
+          const padding = 20; // Padding from viewport edges
+          const iconSize = 36; // Approximate size of the icon button
+          
+          // Get viewport dimensions
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+          
+          // Calculate initial position
+          let x = rect.right + window.scrollX;
+          let y = rect.top + window.scrollY;
+          
+          // Ensure icon stays within horizontal boundaries with padding
+          if (x + iconSize + padding > viewportWidth) {
+            x = viewportWidth - iconSize - padding;
+          }
+          if (x < padding) {
+            x = padding;
+          }
+          
+          // Ensure icon stays within vertical boundaries with padding
+          if (y + iconSize + padding > viewportHeight) {
+            y = viewportHeight - iconSize - padding;
+          }
+          if (y < padding) {
+            y = padding;
+          }
+          
+          setIconPos({ x, y });
+          
+          if (text.length > 5) {
+            setExplanation('Generating explanation...');
+            const explainSnippet = useChatStore.getState().explainSnippet;
+            explainSnippet(text).then(exp => setExplanation(exp));
+          }
+        }
+      }
+    };
+    document.addEventListener("selectionchange", handleSelection);
+    return () => document.removeEventListener("selectionchange", handleSelection);
+  }, []);
+
   if (!note) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -53,14 +146,67 @@ export function Editor({ noteId }: EditorProps) {
   const textContent = (
     <>
       <FontFormatBar onFormatChange={handleFormatChange} />
-      <div className="flex-1 flex flex-col overflow-auto">
-        <Textarea 
-          value={content} 
-          onChange={e => setContent(e.target.value)} 
-          className="flex-1 min-h-0 resize-none border-none focus-visible:ring-0 p-0" 
-          placeholder="Start writing your note..." 
-          style={textFormatting} 
-        />
+      <div className="flex-1 flex flex-col overflow-auto relative">
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          className="flex-1 min-h-0 outline-none p-0 whitespace-pre-wrap"
+          style={textFormatting}
+          onInput={(e) => setContent((e.target as HTMLDivElement).innerText)}
+          onBlur={(e) => setContent((e.target as HTMLDivElement).innerText)}
+          onFocus={() => {
+            // ensure innerText sync
+            if (editorRef.current && editorRef.current.innerText !== content) {
+              editorRef.current.innerText = content;
+            }
+          }}
+        >{content}</div>
+
+        {selectedText && iconPos && (
+          <Button
+            size="icon"
+            variant="default"
+            className="fixed z-50 bg-primary text-primary-foreground hover:bg-primary/90"
+            style={{ top: iconPos.y - 8, left: iconPos.x + 8 }}
+            onClick={() => setOpenSummary(true)}
+            aria-label="Explain selection"
+          >
+            <Lightbulb className="h-4 w-4" />
+          </Button>
+        )}
+
+        <Dialog open={openSummary} onOpenChange={setOpenSummary}>
+          <DialogContent className="sm:max-w-[550px]">
+            <DialogHeader>
+              <DialogTitle>Explanation</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="rounded-md bg-muted p-3 text-sm whitespace-pre-wrap">
+                {explanation || "Highlight text to generate an explanation..."}
+              </div>
+              
+              {!middleSchoolExplanation && (
+                <Button 
+                  onClick={handleMiddleSchoolExplain}
+                  size="sm"
+                  className="mt-2"
+                >
+                  Explain to a Middle Schooler
+                </Button>
+              )}
+              
+              {middleSchoolExplanation && (
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Middle School Explanation:</h4>
+                  <div className="rounded-md bg-muted p-3 text-sm whitespace-pre-wrap">
+                    {middleSchoolExplanation}
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       
       <AttachmentGallery 
