@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FocusModeSettings } from '@/components/Focus/FocusModeSettings';
 import { FocusModeList } from '@/components/Focus/FocusModeList';
@@ -41,38 +40,38 @@ const FocusMode = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full relative bg-gradient-to-b from-background to-purple-50 dark:from-background dark:to-slate-900">
+      <div className="min-h-screen flex w-full relative bg-slate-900 text-white">
         <Sidebar />
         <FloatingSidebarTrigger />
         <main className="flex-1 p-6">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-r from-note-purple to-note-blue p-3 rounded-full">
+              <div className="bg-gradient-to-r from-indigo-600 to-violet-700 p-3 rounded-full">
                 <Zap className="h-6 w-6 text-white" />
               </div>
-              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-note-purple to-purple-400">Focus Mode</h1>
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-300">Focus Mode</h1>
             </div>
-            <Button onClick={handleCreateFocusMode} className="flex items-center gap-2 bg-gradient-to-r from-note-purple to-purple-500 hover:opacity-90 transition-opacity">
+            <Button onClick={handleCreateFocusMode} className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-700 hover:opacity-90 transition-opacity">
               <Plus className="h-4 w-4" />
               <span>Create Focus</span>
             </Button>
           </div>
 
-          <div className="mb-8 p-8 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 shadow-lg relative overflow-hidden">
-            <div className="absolute inset-0 bg-pattern opacity-10"></div>
+          <div className="mb-8 p-8 rounded-2xl bg-gradient-to-r from-slate-800 to-slate-700 shadow-lg relative overflow-hidden border border-slate-600">
+            <div className="absolute inset-0 bg-pattern opacity-5"></div>
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-4">
-                <Lightbulb className="h-8 w-8 text-white" />
+                <Lightbulb className="h-8 w-8 text-indigo-300" />
                 <h2 className="text-3xl font-bold text-white">Level Up Your Focus</h2>
               </div>
-              <p className="text-white/90 text-lg max-w-lg">
+              <p className="text-slate-300 text-lg max-w-lg">
                 Create custom focus modes to block distractions and boost your productivity.
                 Perfect for studying, gaming, or just chilling without interruptions.
               </p>
             </div>
             
-            <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
-            <div className="absolute top-4 right-8 w-20 h-20 bg-white/10 rounded-full blur-lg"></div>
+            <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-xl"></div>
+            <div className="absolute top-4 right-8 w-20 h-20 bg-indigo-400/10 rounded-full blur-lg"></div>
           </div>
 
           <FocusModeList onEdit={handleEditFocusMode} />
