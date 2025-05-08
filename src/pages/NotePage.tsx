@@ -26,6 +26,7 @@ const FloatingSidebarTrigger = () => {
 const NotePage = () => {
   const { id } = useParams<{ id: string }>();
   const setActiveNote = useNoteStore(state => state.setActiveNote);
+  const isLoading = useNoteStore(state => state.isLoading);
   
   // Set the active note ID when this page loads
   useEffect(() => {
@@ -49,7 +50,14 @@ const NotePage = () => {
         <Sidebar />
         <main className="flex-1 overflow-hidden relative">
           <FloatingSidebarTrigger />
-          <Editor noteId={id} />
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+              <span className="ml-3">Loading note...</span>
+            </div>
+          ) : (
+            <Editor noteId={id} />
+          )}
         </main>
       </div>
     </SidebarProvider>
