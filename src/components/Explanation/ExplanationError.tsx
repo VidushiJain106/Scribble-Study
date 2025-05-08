@@ -2,19 +2,33 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 interface ExplanationErrorProps {
   noteId?: string;
-  errorType?: "not-found" | "not-ready" | "generic";
+  errorType?: "not-found" | "not-ready" | "api-error" | "generic";
   onRetry?: () => void;
+  errorMessage?: string;
 }
 
 export function ExplanationError({ 
   noteId, 
   errorType = "generic",
-  onRetry
+  onRetry,
+  errorMessage
 }: ExplanationErrorProps) {
   const navigate = useNavigate();
+  
+  const handleRetry = () => {
+    toast({
+      title: "Retrying",
+      description: "Generating a new explanation..."
+    });
+    
+    if (onRetry) {
+      onRetry();
+    }
+  };
   
   const getErrorMessage = () => {
     switch (errorType) {
@@ -22,6 +36,8 @@ export function ExplanationError({
         return "Note not found";
       case "not-ready":
         return "This note isn't ready for explanation yet";
+      case "api-error":
+        return "AI service connection error";
       default:
         return "Unable to generate explanation";
     }
@@ -33,8 +49,10 @@ export function ExplanationError({
         return "We couldn't find the note you're looking for.";
       case "not-ready":
         return "Try adding more content to your note so it can be analyzed properly.";
+      case "api-error":
+        return errorMessage || "There was a problem connecting to the AI service. Please try again.";
       default:
-        return "There was a problem generating the explanation. Please try again.";
+        return errorMessage || "There was a problem generating the explanation. Please try again.";
     }
   };
   
@@ -59,7 +77,7 @@ export function ExplanationError({
           
           {onRetry && (
             <Button 
-              onClick={onRetry} 
+              onClick={handleRetry} 
               className="flex items-center gap-2"
               size="lg"
             >
