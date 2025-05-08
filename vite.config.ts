@@ -29,12 +29,12 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     // Improve production build configuration
-    sourcemap: false,
-    minify: 'terser',
-    terserOptions: {
+    sourcemap: mode === 'development',
+    minify: mode === 'production' ? 'terser' : false,
+    terserOptions: mode === 'production' ? {
       compress: {
         drop_console: true,
       },
-    },
+    } : undefined,
   },
 }));
