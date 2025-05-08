@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Pen } from "lucide-react";
 import { CSSProperties, ReactNode } from "react";
@@ -16,8 +17,8 @@ export function TabsContainer({
   drawContent 
 }: TabsContainerProps) {
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full overflow-hidden">
-      <div className="px-4 pt-2 sticky top-0 z-10 bg-background border-b">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+      <div className="px-4 pt-2">
         <TabsList className="grid grid-cols-2">
           <TabsTrigger value="text" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
