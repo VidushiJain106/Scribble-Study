@@ -1,7 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Explanation } from "@/types";
-import { HelpCircle, Lightbulb, ArrowLeft } from "lucide-react";
+import { 
+  HelpCircle, 
+  Lightbulb, 
+  ArrowLeft, 
+  BookOpen, 
+  ListTodo,
+  FileText,
+  CheckSquare 
+} from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -77,18 +85,45 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-        <div className="md:col-span-1 space-y-3">
-          <h2 className="font-medium text-lg mb-3">Sections</h2>
-          {explanation.content.sections.map((section, idx) => (
-            <Button
-              key={idx}
-              variant={activeSection === idx ? "default" : "outline"}
-              className="w-full justify-start text-left h-auto py-2 font-normal"
-              onClick={() => setActiveSection(idx)}
-            >
-              {section.title}
-            </Button>
-          ))}
+        <div className="md:col-span-1">
+          <Card className="p-4 sticky top-6">
+            <div className="flex items-center mb-4">
+              <ListTodo className="h-5 w-5 mr-2 text-primary" />
+              <h2 className="font-medium text-lg">Navigation</h2>
+            </div>
+            <div className="space-y-2">
+              {explanation.content.sections.map((section, idx) => {
+                // Use actual section titles but with icon categorization
+                let SectionIcon;
+                
+                if (idx === 0) {
+                  SectionIcon = BookOpen;
+                } else if (idx === explanation.content.sections.length - 1) {
+                  SectionIcon = CheckSquare;
+                } else {
+                  SectionIcon = FileText;
+                }
+                
+                return (
+                  <Button
+                    key={idx}
+                    variant={activeSection === idx ? "default" : "outline"}
+                    className="w-full justify-start text-left h-auto py-3 px-4 font-normal text-sm"
+                    onClick={() => setActiveSection(idx)}
+                    title={section.title} // Add full title as tooltip
+                  >
+                    <SectionIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <div className="flex-1 overflow-hidden">
+                      <span className="truncate inline-block w-full">{section.title}</span>
+                      {section.title.length > 20 && (
+                        <span className="text-muted-foreground text-xs">...</span>
+                      )}
+                    </div>
+                  </Button>
+                );
+              })}
+            </div>
+          </Card>
         </div>
         
         <div className="md:col-span-3">
