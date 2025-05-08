@@ -7,12 +7,17 @@ const TOAST_REMOVE_DELAY = 1000000
 
 type ToastActionElement = React.ReactElement<any, string | React.JSXElementConstructor<any>>
 
-export type ToasterToastProps = {
-  id: string
+// External-facing toast props (what users will provide)
+export interface ToastProps {
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
   variant?: "default" | "destructive"
+}
+
+// Internal toast props (what the system uses)
+export type ToasterToastProps = ToastProps & {
+  id: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -126,8 +131,6 @@ function dispatch(action: Action) {
     listener(memoryState)
   })
 }
-
-export type ToastProps = Omit<ToasterToastProps, "id">
 
 function toast({ ...props }: ToastProps) {
   const id = genId()
