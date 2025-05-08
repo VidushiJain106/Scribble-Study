@@ -1,13 +1,11 @@
 
-import { useEffect, useState } from "react";
-import { DrawPath } from "@/types";
+import { useEffect } from "react";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { FontFormatBar } from "./FontFormatBar";
 import { useNoteEditor } from "@/hooks/useNoteEditor";
 import { NoteActions } from "./NoteActions";
 import { TabsContainer } from "./TabsContainer";
 import { TextEditor } from "./TextEditor";
-import { FloatingExplainButton } from "./FloatingExplainButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -19,13 +17,7 @@ export function Editor({ noteId }: EditorProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-    }
-  }, [user, navigate]);
-  
+  // Always call hooks unconditionally at the top level
   const {
     note,
     title,
@@ -47,7 +39,15 @@ export function Editor({ noteId }: EditorProps) {
     forceAnalysis,
     deleteNote
   } = useNoteEditor(noteId);
-
+  
+  // Redirect to login if not authenticated - after all hooks are called
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
+  
+  // Render not found message if note doesn't exist and we're not loading
   if (!note && !isLoading) {
     return (
       <div className="flex items-center justify-center h-full">

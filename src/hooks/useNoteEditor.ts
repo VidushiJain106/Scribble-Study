@@ -15,60 +15,36 @@ export function useNoteEditor(noteId: string) {
   const [activeTab, setActiveTab] = useState("text");
   const navigate = useNavigate();
 
-  // Get note state from custom hook
-  const {
-    note,
-    title,
-    setTitle,
-    content,
-    setContent,
-    textFormatting,
-    handleFormatChange
-  } = useNoteState(noteId);
+  // Get note state from custom hook - always call hooks regardless of conditions
+  const noteState = useNoteState(noteId);
+  
+  // Get analysis functionality from custom hook - always call regardless of conditions
+  const noteAnalysis = useNoteAnalysis(noteState.note, noteState.content);
 
-  // Get analysis functionality from custom hook
-  const {
-    isAnalyzing,
-    forceAnalysis
-  } = useNoteAnalysis(note, content);
+  // Get save functionality from custom hook - always call regardless of conditions
+  const noteSave = useNoteSave(noteId);
 
-  // Get save functionality from custom hook
-  const {
-    isSaving,
-    handleSave,
-    deleteNote
-  } = useNoteSave(noteId);
-
-  // Get attachment functionality from custom hook
-  const {
-    handleDrawingComplete,
-    handleFileUpload,
-    handleDeleteAttachment
-  } = useNoteAttachments(noteId);
+  // Get attachment functionality from custom hook - always call regardless of conditions
+  const noteAttachments = useNoteAttachments(noteId);
 
   const handleExplainClick = () => {
     navigate(`/note/${noteId}/explanation`);
   };
 
+  // Return all properties from the hooks
   return {
-    note,
-    title,
-    setTitle,
-    content,
-    setContent,
+    ...noteState,
     activeTab,
     setActiveTab,
-    textFormatting,
-    isAnalyzing,
+    isAnalyzing: noteAnalysis.isAnalyzing,
     isLoading,
-    isSaving,
-    handleSave: () => handleSave(title, content),
-    handleDrawingComplete,
-    handleFileUpload,
-    handleDeleteAttachment,
-    handleFormatChange,
+    isSaving: noteSave.isSaving,
+    handleSave: (title: string, content: string) => noteSave.handleSave(title, content),
+    handleDrawingComplete: noteAttachments.handleDrawingComplete,
+    handleFileUpload: noteAttachments.handleFileUpload,
+    handleDeleteAttachment: noteAttachments.handleDeleteAttachment,
     handleExplainClick,
-    forceAnalysis,
-    deleteNote
+    forceAnalysis: noteAnalysis.forceAnalysis,
+    deleteNote: noteSave.deleteNote
   };
 }
