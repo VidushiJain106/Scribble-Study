@@ -1,3 +1,4 @@
+
 import { Textarea } from "@/components/ui/textarea";
 import { DrawPath } from "@/types";
 import { useEffect, useRef, useState } from "react";
@@ -12,12 +13,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Lightbulb, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChatStore } from "@/lib/chatStore";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface EditorProps {
   noteId: string;
 }
 
 export function Editor({ noteId }: EditorProps) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
+  
   const {
     note,
     title,
@@ -28,6 +41,8 @@ export function Editor({ noteId }: EditorProps) {
     setActiveTab,
     textFormatting,
     isAnalyzing,
+    isLoading,
+    isSaving,
     handleSave,
     handleDrawingComplete,
     handleFileUpload,
@@ -45,12 +60,6 @@ export function Editor({ noteId }: EditorProps) {
   const [explanation, setExplanation] = useState<string | null>(null);
   const [middleSchoolExplanation, setMiddleSchoolExplanation] = useState<string | null>(null);
 
-  const generateSummary = (text: string) => {
-    // Very naive placeholder summary logic
-    if (text.length <= 100) return text;
-    return text.substring(0, 100) + "...";
-  };
-
   const handleExplainSelected = () => {
     const explainSnippet = useChatStore.getState().explainSnippet;
     setExplanation('Generating explanation...');
@@ -63,12 +72,6 @@ export function Editor({ noteId }: EditorProps) {
     explainForMiddleSchooler(selectedText).then(exp => setMiddleSchoolExplanation(exp));
   };
 
-  // Setup effect to automatically trigger analysis when content changes
-  // This is a placeholder - the actual logic is in the useNoteEditor hook
-  useEffect(() => {
-    // Left intentionally empty as the logic is now in the hook
-  }, []);
-  
   // Listen to selection changes to position icon next to highlight
   useEffect(() => {
     const handleSelection = () => {
@@ -134,7 +137,7 @@ export function Editor({ noteId }: EditorProps) {
     return () => document.removeEventListener("selectionchange", handleSelection);
   }, []);
 
-  if (!note) {
+  if (!note && !isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <p>Note not found</p>
@@ -224,7 +227,7 @@ export function Editor({ noteId }: EditorProps) {
       </div>
       
       <AttachmentGallery 
-        attachments={note.attachments || []} 
+        attachments={note?.attachments || []} 
         onDelete={handleDeleteAttachment} 
       />
     </div>
@@ -235,7 +238,6 @@ export function Editor({ noteId }: EditorProps) {
     <DrawingCanvas onComplete={handleDrawingComplete} />
   );
 
-  // We're no longer showing the floating explain button since we have a permanent one in the header
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="sticky top-0 z-20 bg-background">
@@ -245,6 +247,7 @@ export function Editor({ noteId }: EditorProps) {
           setTitle={setTitle}
           note={note}
           isAnalyzing={isAnalyzing}
+          isSaving={isSaving}
           handleSave={handleSave}
           deleteNote={deleteNote}
           handleFileUpload={handleFileUpload}
@@ -259,6 +262,7 @@ export function Editor({ noteId }: EditorProps) {
           setActiveTab={setActiveTab}
           textContent={textContent}
           drawContent={drawContent}
+          isLoading={isLoading}
         />
       </div>
     </div>

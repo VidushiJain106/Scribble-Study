@@ -5,6 +5,7 @@ import { DrawPath, Note, Attachment } from "@/types";
 import { useEffect, useState, CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function useNoteEditor(noteId: string) {
   const notes = useNoteStore(state => state.notes);
@@ -14,6 +15,8 @@ export function useNoteEditor(noteId: string) {
   const addAttachmentToNote = useNoteStore(state => state.addAttachmentToNote);
   const removeAttachmentFromNote = useNoteStore(state => state.removeAttachmentFromNote);
   const analyzeNote = useChatStore(state => state.analyzeNote);
+  const isLoading = useNoteStore(state => state.isLoading);
+  const { user } = useAuth();
   
   const [note, setNote] = useState<Note | null>(null);
   const [title, setTitle] = useState("");
@@ -22,6 +25,7 @@ export function useNoteEditor(noteId: string) {
   const [textFormatting, setTextFormatting] = useState<CSSProperties>({});
   const [analysisTimer, setAnalysisTimer] = useState<NodeJS.Timeout | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,7 +36,7 @@ export function useNoteEditor(noteId: string) {
     if (foundNote) {
       setNote(foundNote);
       setTitle(foundNote.title);
-      setContent(foundNote.content);
+      setContent(foundNote.content || "");
     }
   }, [noteId, notes]);
 
@@ -66,42 +70,90 @@ export function useNoteEditor(noteId: string) {
   }, [content, note, analyzeNote]);
 
   // Save note changes
-  const handleSave = () => {
-    if (!note) return;
-    updateNote(noteId, {
-      title,
-      content
-    });
-    toast({
-      title: "Note saved",
-      description: "Your changes have been saved"
-    });
+  const handleSave = async () => {
+    if (!note || !user) return;
+    
+    setIsSaving(true);
+    try {
+      await updateNote(noteId, {
+        title,
+        content
+      });
+      
+      toast({
+        title: "Note saved",
+        description: "Your changes have been saved"
+      });
+    } catch (error) {
+      console.error("Error saving note:", error);
+      toast({
+        title: "Error saving note",
+        description: "There was a problem saving your note",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Handle drawing completion
-  const handleDrawingComplete = (paths: DrawPath[]) => {
-    if (!note) return;
-    addDrawingToNote(noteId, paths);
-    toast({
-      title: "Drawing saved",
-      description: "Your drawing has been added to the note"
-    });
+  const handleDrawingComplete = async (paths: DrawPath[]) => {
+    if (!note || !user) return;
+    
+    try {
+      await addDrawingToNote(noteId, paths);
+      toast({
+        title: "Drawing saved",
+        description: "Your drawing has been added to the note"
+      });
+    } catch (error) {
+      console.error("Error saving drawing:", error);
+      toast({
+        title: "Error saving drawing",
+        description: "There was a problem saving your drawing",
+        variant: "destructive"
+      });
+    }
   };
 
   // Handle file upload
-  const handleFileUpload = (attachment: Omit<Attachment, "id" | "createdAt">) => {
-    if (!note) return;
-    addAttachmentToNote(noteId, attachment);
+  const handleFileUpload = async (attachment: Omit<Attachment, "id" | "createdAt">) => {
+    if (!note || !user) return;
+    
+    try {
+      await addAttachmentToNote(noteId, attachment);
+      toast({
+        title: "Attachment added",
+        description: "Your file has been attached to the note"
+      });
+    } catch (error) {
+      console.error("Error adding attachment:", error);
+      toast({
+        title: "Error adding attachment",
+        description: "There was a problem adding your attachment",
+        variant: "destructive"
+      });
+    }
   };
 
   // Handle delete attachment
-  const handleDeleteAttachment = (attachmentId: string) => {
-    if (!note) return;
-    removeAttachmentFromNote(noteId, attachmentId);
-    toast({
-      title: "Attachment removed",
-      description: "The attachment has been removed from the note"
-    });
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!note || !user) return;
+    
+    try {
+      await removeAttachmentFromNote(noteId, attachmentId);
+      toast({
+        title: "Attachment removed",
+        description: "The attachment has been removed from the note"
+      });
+    } catch (error) {
+      console.error("Error removing attachment:", error);
+      toast({
+        title: "Error removing attachment",
+        description: "There was a problem removing the attachment",
+        variant: "destructive"
+      });
+    }
   };
 
   // Handle text formatting
@@ -123,13 +175,49 @@ export function useNoteEditor(noteId: string) {
       ...note,
       content
     };
-    analyzeNote(updatedNote);
-    setIsAnalyzing(false);
+    analyzeNote(updatedNote)
+      .then(() => {
+        toast({
+          title: "Analysis complete",
+          description: "Your note has been analyzed"
+        });
+      })
+      .catch(error => {
+        console.error("Error during analysis:", error);
+        toast({
+          title: "Analysis failed",
+          description: "There was a problem analyzing your note",
+          variant: "destructive"
+        });
+      })
+      .finally(() => {
+        setIsAnalyzing(false);
+      });
     
     toast({
       title: "Analysis requested",
       description: "Your note is being analyzed..."
     });
+  };
+
+  const handleDelete = async () => {
+    if (!note || !user) return;
+    
+    try {
+      await deleteNote(noteId);
+      navigate("/app");
+      toast({
+        title: "Note deleted",
+        description: "Your note has been permanently deleted"
+      });
+    } catch (error) {
+      console.error("Error deleting note:", error);
+      toast({
+        title: "Error deleting note",
+        description: "There was a problem deleting your note",
+        variant: "destructive"
+      });
+    }
   };
 
   return {
@@ -142,6 +230,8 @@ export function useNoteEditor(noteId: string) {
     setActiveTab,
     textFormatting,
     isAnalyzing,
+    isLoading,
+    isSaving,
     handleSave,
     handleDrawingComplete,
     handleFileUpload,
@@ -149,6 +239,6 @@ export function useNoteEditor(noteId: string) {
     handleFormatChange,
     handleExplainClick,
     forceAnalysis,
-    deleteNote
+    deleteNote: handleDelete
   };
 }

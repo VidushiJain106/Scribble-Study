@@ -1,187 +1,376 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { Note, NoteCategory, NoteColor, Attachment, DrawPath } from '@/types';
 import { useDrawingStore } from './drawingStore';
 import { useCategoryStore } from './categoryStore';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NoteState {
   notes: Note[];
   activeNoteId: string | null;
+  isLoading: boolean;
   
   // Actions
-  createNote: (category?: NoteCategory, color?: NoteColor) => string;
-  updateNote: (id: string, data: Partial<Omit<Note, 'id'>>) => void;
-  deleteNote: (id: string) => void;
+  fetchNotes: () => Promise<void>;
+  createNote: (category?: NoteCategory, color?: NoteColor) => Promise<string>;
+  updateNote: (id: string, data: Partial<Omit<Note, 'id'>>) => Promise<void>;
+  deleteNote: (id: string) => Promise<void>;
   setActiveNote: (id: string | null) => void;
-  addDrawingToNote: (noteId: string, paths: DrawPath[]) => void;
-  addAttachmentToNote: (noteId: string, attachment: Omit<Attachment, 'id' | 'createdAt'>) => void;
-  removeAttachmentFromNote: (noteId: string, attachmentId: string) => void;
+  addDrawingToNote: (noteId: string, paths: DrawPath[]) => Promise<void>;
+  addAttachmentToNote: (noteId: string, attachment: Omit<Attachment, 'id' | 'createdAt'>) => Promise<void>;
+  removeAttachmentFromNote: (noteId: string, attachmentId: string) => Promise<void>;
 }
 
-export const useNoteStore = create<NoteState>()(
-  persist(
-    (set, get) => ({
-      notes: [
-        {
-          id: '1',
-          title: 'Welcome to ScribbleSnap!',
-          content: 'This is your first note. Try editing it, add some drawings, or upload an image!',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          category: 'personal',
-          color: 'purple',
-          hasAttachments: false,
-          hasDrawings: false,
-        },
-        {
-          id: '2',
-          title: 'Meeting Notes',
-          content: 'Discuss project timeline\n- Start development next week\n- Launch in 2 months',
-          createdAt: new Date(Date.now() - 86400000),
-          updatedAt: new Date(Date.now() - 86400000),
-          category: 'work',
-          color: 'blue',
-          hasAttachments: false,
-          hasDrawings: false,
-        },
-        {
-          id: '3',
-          title: 'Shopping List',
-          content: '- Milk\n- Eggs\n- Bread\n- Apples',
-          createdAt: new Date(Date.now() - 172800000),
-          updatedAt: new Date(Date.now() - 172800000),
-          category: 'personal',
-          color: 'green',
-          hasAttachments: false,
-          hasDrawings: false,
-        }
-      ],
-      activeNoteId: null,
+export const useNoteStore = create<NoteState>()((set, get) => ({
+  notes: [],
+  activeNoteId: null,
+  isLoading: false,
+  
+  fetchNotes: async () => {
+    const { user } = useAuth.getState();
+    if (!user) return;
+    
+    set({ isLoading: true });
+    
+    try {
+      // Fetch notes
+      const { data: notes, error } = await supabase
+        .from('notes')
+        .select('*')
+        .order('updated_at', { ascending: false });
       
-      createNote: (category = 'uncategorized' as NoteCategory, color = 'purple' as NoteColor) => {
-        const id = uuidv4();
-        const newNote: Note = {
-          id,
-          title: 'Untitled Note',
-          content: '',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          category,
-          color,
-          hasAttachments: false,
-          hasDrawings: false,
-        };
-        
-        set(state => ({
-          notes: [newNote, ...state.notes],
-          activeNoteId: id
-        }));
-        
-        return id;
-      },
-      
-      updateNote: (id, data) => {
-        set(state => ({
-          notes: state.notes.map(note => 
-            note.id === id 
-              ? { ...note, ...data, updatedAt: new Date() } 
-              : note
-          )
-        }));
-      },
-      
-      deleteNote: (id) => {
-        set(state => ({
-          notes: state.notes.filter(note => note.id !== id),
-          activeNoteId: state.activeNoteId === id ? null : state.activeNoteId
-        }));
-      },
-      
-      setActiveNote: (id) => {
-        set({ activeNoteId: id });
-      },
-      
-      addDrawingToNote: (noteId, paths) => {
-        set(state => {
-          const noteIndex = state.notes.findIndex(note => note.id === noteId);
-          if (noteIndex === -1) return state;
-          
-          const updatedNote = { ...state.notes[noteIndex] } as any;
-          const newDrawing = {
-            id: uuidv4(),
-            paths,
-            createdAt: new Date()
-          } as any;
-          
-          updatedNote.drawings = updatedNote.drawings ? [...updatedNote.drawings, newDrawing] : [newDrawing];
-          updatedNote.hasDrawings = true;
-          updatedNote.updatedAt = new Date();
-          
-          const updatedNotes = [...state.notes];
-          updatedNotes[noteIndex] = updatedNote;
-          
-          // Get the drawingStore state
-          const drawingState = useDrawingStore.getState();
-          
-          return { 
-            notes: updatedNotes
-          } as any;
-        });
-      },
-      
-      addAttachmentToNote: (noteId, attachmentData) => {
-        set(state => {
-          const noteIndex = state.notes.findIndex(note => note.id === noteId);
-          if (noteIndex === -1) return state;
-          
-          const updatedNote = { ...state.notes[noteIndex] } as any;
-          const newAttachment: Attachment = {
-            id: uuidv4(),
-            ...attachmentData,
-            createdAt: new Date()
-          } as any;
-          
-          updatedNote.attachments = updatedNote.attachments 
-            ? [...updatedNote.attachments, newAttachment] 
-            : [newAttachment];
-          updatedNote.hasAttachments = true;
-          updatedNote.updatedAt = new Date();
-          
-          const updatedNotes = [...state.notes];
-          updatedNotes[noteIndex] = updatedNote;
-          
-          return { notes: updatedNotes } as any;
-        });
-      },
-      
-      removeAttachmentFromNote: (noteId, attachmentId) => {
-        set(state => {
-          const noteIndex = state.notes.findIndex(note => note.id === noteId);
-          if (noteIndex === -1) return state;
-          
-          const updatedNote = { ...state.notes[noteIndex] } as any;
-          if (!updatedNote.attachments) return state;
-          
-          updatedNote.attachments = updatedNote.attachments.filter(
-            (attachment: any) => attachment.id !== attachmentId
-          );
-          updatedNote.hasAttachments = updatedNote.attachments.length > 0;
-          updatedNote.updatedAt = new Date();
-          
-          const updatedNotes = [...state.notes];
-          updatedNotes[noteIndex] = updatedNote;
-          
-          return { notes: updatedNotes } as any;
-        });
+      if (error) {
+        console.error('Error fetching notes:', error);
+        throw error;
       }
-    }),
-    {
-      name: 'scribblesnap-notes',
-      partialize: (state) => ({ notes: state.notes }),
+      
+      // Process the notes to match our Note type
+      const formattedNotes = notes.map(note => ({
+        ...note,
+        createdAt: new Date(note.created_at),
+        updatedAt: new Date(note.updated_at),
+      })) as Note[];
+      
+      set({ notes: formattedNotes, isLoading: false });
+    } catch (error) {
+      console.error('Error in fetchNotes:', error);
+      set({ isLoading: false });
     }
-  )
-);
+  },
+  
+  createNote: async (category = 'uncategorized' as NoteCategory, color = 'purple' as NoteColor) => {
+    const { user } = useAuth.getState();
+    if (!user) throw new Error('User not authenticated');
+    
+    const id = uuidv4();
+    const now = new Date();
+    
+    const newNote = {
+      id,
+      title: 'Untitled Note',
+      content: '',
+      category,
+      color,
+      has_attachments: false,
+      has_drawings: false,
+      user_id: user.id
+    };
+    
+    try {
+      // Insert into Supabase
+      const { error } = await supabase
+        .from('notes')
+        .insert([newNote]);
+      
+      if (error) {
+        console.error('Error creating note:', error);
+        throw error;
+      }
+      
+      // Add to local state with proper date objects
+      const formattedNote = {
+        ...newNote,
+        hasAttachments: false,
+        hasDrawings: false,
+        createdAt: now,
+        updatedAt: now,
+      } as Note;
+      
+      set(state => ({
+        notes: [formattedNote, ...state.notes],
+        activeNoteId: id
+      }));
+      
+      return id;
+    } catch (error) {
+      console.error('Error in createNote:', error);
+      throw error;
+    }
+  },
+  
+  updateNote: async (id, data) => {
+    const { user } = useAuth.getState();
+    if (!user) return;
+    
+    try {
+      // Prepare data for Supabase (convert field names to snake_case)
+      const supabaseData = {
+        title: data.title,
+        content: data.content,
+        category: data.category,
+        color: data.color,
+        updated_at: new Date(),
+      };
+      
+      // Update in Supabase
+      const { error } = await supabase
+        .from('notes')
+        .update(supabaseData)
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error updating note:', error);
+        throw error;
+      }
+      
+      // Update in local state
+      set(state => ({
+        notes: state.notes.map(note => 
+          note.id === id 
+            ? { ...note, ...data, updatedAt: new Date() } 
+            : note
+        )
+      }));
+    } catch (error) {
+      console.error('Error in updateNote:', error);
+    }
+  },
+  
+  deleteNote: async (id) => {
+    const { user } = useAuth.getState();
+    if (!user) return;
+    
+    try {
+      // Delete from Supabase
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting note:', error);
+        throw error;
+      }
+      
+      // Update local state
+      set(state => ({
+        notes: state.notes.filter(note => note.id !== id),
+        activeNoteId: state.activeNoteId === id ? null : state.activeNoteId
+      }));
+    } catch (error) {
+      console.error('Error in deleteNote:', error);
+    }
+  },
+  
+  setActiveNote: (id) => {
+    set({ activeNoteId: id });
+  },
+  
+  addDrawingToNote: async (noteId, paths) => {
+    const { user } = useAuth.getState();
+    if (!user) return;
+    
+    try {
+      const drawingId = uuidv4();
+      const now = new Date();
+      
+      // Insert drawing into Supabase
+      const { error: drawingError } = await supabase
+        .from('drawings')
+        .insert({
+          id: drawingId,
+          note_id: noteId,
+          paths,
+          created_at: now
+        });
+      
+      if (drawingError) {
+        console.error('Error adding drawing:', drawingError);
+        throw drawingError;
+      }
+      
+      // Update note to indicate it has drawings
+      const { error: noteError } = await supabase
+        .from('notes')
+        .update({ has_drawings: true, updated_at: now })
+        .eq('id', noteId);
+      
+      if (noteError) {
+        console.error('Error updating note with drawing info:', noteError);
+        throw noteError;
+      }
+      
+      // Update local state
+      set(state => {
+        const noteIndex = state.notes.findIndex(note => note.id === noteId);
+        if (noteIndex === -1) return state;
+        
+        const updatedNote = { ...state.notes[noteIndex] } as any;
+        const newDrawing = {
+          id: drawingId,
+          paths,
+          createdAt: now
+        } as any;
+        
+        updatedNote.drawings = updatedNote.drawings ? [...updatedNote.drawings, newDrawing] : [newDrawing];
+        updatedNote.hasDrawings = true;
+        updatedNote.updatedAt = now;
+        
+        const updatedNotes = [...state.notes];
+        updatedNotes[noteIndex] = updatedNote;
+        
+        return { notes: updatedNotes };
+      });
+    } catch (error) {
+      console.error('Error in addDrawingToNote:', error);
+    }
+  },
+  
+  addAttachmentToNote: async (noteId, attachmentData) => {
+    const { user } = useAuth.getState();
+    if (!user) return;
+    
+    try {
+      const attachmentId = uuidv4();
+      const now = new Date();
+      
+      // Insert attachment into Supabase
+      const { error: attachmentError } = await supabase
+        .from('attachments')
+        .insert({
+          id: attachmentId,
+          note_id: noteId,
+          name: attachmentData.name,
+          url: attachmentData.url,
+          type: attachmentData.type,
+          size: attachmentData.size,
+          created_at: now
+        });
+      
+      if (attachmentError) {
+        console.error('Error adding attachment:', attachmentError);
+        throw attachmentError;
+      }
+      
+      // Update note to indicate it has attachments
+      const { error: noteError } = await supabase
+        .from('notes')
+        .update({ has_attachments: true, updated_at: now })
+        .eq('id', noteId);
+      
+      if (noteError) {
+        console.error('Error updating note with attachment info:', noteError);
+        throw noteError;
+      }
+      
+      // Update local state
+      set(state => {
+        const noteIndex = state.notes.findIndex(note => note.id === noteId);
+        if (noteIndex === -1) return state;
+        
+        const updatedNote = { ...state.notes[noteIndex] } as any;
+        const newAttachment: Attachment = {
+          id: attachmentId,
+          ...attachmentData,
+          createdAt: now
+        } as any;
+        
+        updatedNote.attachments = updatedNote.attachments 
+          ? [...updatedNote.attachments, newAttachment] 
+          : [newAttachment];
+        updatedNote.hasAttachments = true;
+        updatedNote.updatedAt = now;
+        
+        const updatedNotes = [...state.notes];
+        updatedNotes[noteIndex] = updatedNote;
+        
+        return { notes: updatedNotes };
+      });
+    } catch (error) {
+      console.error('Error in addAttachmentToNote:', error);
+    }
+  },
+  
+  removeAttachmentFromNote: async (noteId, attachmentId) => {
+    const { user } = useAuth.getState();
+    if (!user) return;
+    
+    try {
+      // Delete attachment from Supabase
+      const { error: attachmentError } = await supabase
+        .from('attachments')
+        .delete()
+        .eq('id', attachmentId);
+      
+      if (attachmentError) {
+        console.error('Error removing attachment:', attachmentError);
+        throw attachmentError;
+      }
+      
+      // Update local state
+      set(state => {
+        const noteIndex = state.notes.findIndex(note => note.id === noteId);
+        if (noteIndex === -1) return state;
+        
+        const updatedNote = { ...state.notes[noteIndex] } as any;
+        if (!updatedNote.attachments) return state;
+        
+        updatedNote.attachments = updatedNote.attachments.filter(
+          (attachment: any) => attachment.id !== attachmentId
+        );
+        
+        // Check if there are any attachments left
+        const hasAttachments = updatedNote.attachments.length > 0;
+        
+        // Update the has_attachments flag in Supabase if needed
+        if (!hasAttachments) {
+          supabase
+            .from('notes')
+            .update({ has_attachments: false, updated_at: new Date() })
+            .eq('id', noteId)
+            .then(({ error }) => {
+              if (error) console.error('Error updating note attachment flag:', error);
+            });
+        }
+        
+        updatedNote.hasAttachments = hasAttachments;
+        updatedNote.updatedAt = new Date();
+        
+        const updatedNotes = [...state.notes];
+        updatedNotes[noteIndex] = updatedNote;
+        
+        return { notes: updatedNotes };
+      });
+    } catch (error) {
+      console.error('Error in removeAttachmentFromNote:', error);
+    }
+  }
+}));
+
+// Create an auth-aware hook to initialize notes
+export const useInitializeNotes = () => {
+  const fetchNotes = useNoteStore(state => state.fetchNotes);
+  const { user } = useAuth();
+  
+  React.useEffect(() => {
+    if (user) {
+      fetchNotes();
+    }
+  }, [user, fetchNotes]);
+};
 
 // Re-export stores for backward compatibility
 export { useDrawingStore } from './drawingStore';
