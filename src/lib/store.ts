@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,6 +7,7 @@ import { useCategoryStore } from './categoryStore';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import React, { useEffect } from 'react';
 
 interface NoteState {
   notes: Note[];
@@ -149,7 +149,7 @@ export const useNoteStore = create<NoteState>()(
         if (data.category !== undefined) supabaseData.category = data.category;
         if (data.color !== undefined) supabaseData.color = data.color;
         if (data.hasAttachments !== undefined) supabaseData.has_attachments = data.hasAttachments;
-        if (data.hasDrawings !== undefined) supabaseData.has_drawings = data.hasDrawings;
+        if (data.hasDrawings !== undefined) supabaseData.hasDrawings = data.hasDrawings;
         
         // Always update the timestamp
         supabaseData.updated_at = new Date().toISOString();
@@ -354,7 +354,7 @@ export const NotesInitializer = () => {
   const loadNotes = useNoteStore(state => state.loadNotes);
   const { toast } = useToast();
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       loadNotes(user.id)
         .catch(error => {
