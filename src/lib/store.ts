@@ -20,7 +20,7 @@ interface NoteState {
   deleteNote: (id: string) => Promise<void>;
   setActiveNote: (id: string | null) => void;
   addDrawingToNote: (noteId: string, paths: DrawPath[]) => Promise<void>;
-  addAttachmentToNote: (noteId: string, attachment: Omit<Attachment, 'id' | 'createdAt'>) => Promise<void>;
+  addAttachmentToNote: (noteId: string, attachment: Omit<Attachment, "id" | "createdAt">) => Promise<void>;
   removeAttachmentFromNote: (noteId: string, attachmentId: string) => Promise<void>;
 }
 
@@ -239,11 +239,19 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
     }
   },
   
-  addAttachmentToNote: async (noteId, attachmentData) => {
+  addAttachmentToNote: async (noteId, attachment: Omit<Attachment, "id" | "createdAt">) => {
     const { user } = useAuth.getState();
     if (!user) return;
     
     try {
+      set({ isLoading: true });
+      
+      // Ensure attachment has a size property even if it's undefined
+      const attachmentWithSize = {
+        ...attachment,
+        size: attachment.size || 0, // Provide a default value for size if it doesn't exist
+      };
+      
       const attachmentId = uuidv4();
       const now = new Date();
       
@@ -253,10 +261,10 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
         .insert({
           id: attachmentId,
           note_id: noteId,
-          name: attachmentData.name,
-          url: attachmentData.url,
-          type: attachmentData.type,
-          size: attachmentData.size || 0,
+          name: attachmentWithSize.name,
+          url: attachmentWithSize.url,
+          type: attachmentWithSize.type,
+          size: attachmentWithSize.size || 0,
           created_at: now
         });
       
@@ -284,7 +292,7 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
         const updatedNote = { ...state.notes[noteIndex] } as any;
         const newAttachment: Attachment = {
           id: attachmentId,
-          ...attachmentData,
+          ...attachmentWithSize,
           createdAt: now
         } as any;
         
@@ -300,7 +308,9 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
         return { notes: updatedNotes };
       });
     } catch (error) {
-      console.error('Error in addAttachmentToNote:', error);
+      console.error("Error adding attachment to note:", error);
+    } finally {
+      set({ isLoading: false });
     }
   },
   

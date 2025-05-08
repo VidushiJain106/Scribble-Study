@@ -56,8 +56,14 @@ export function useNoteEditor(noteId: string) {
           ...note,
           content
         };
-        analyzeNote(updatedNote);
-        setIsAnalyzing(false);
+        analyzeNote(updatedNote)
+          .then(() => {
+            setIsAnalyzing(false);
+          })
+          .catch((error) => {
+            console.error("Analysis error:", error);
+            setIsAnalyzing(false);
+          });
       }, 5000)); // Wait 5 seconds after typing stops
     }
 
@@ -176,6 +182,13 @@ export function useNoteEditor(noteId: string) {
     };
     
     analyzeNote(updatedNote)
+      .then(() => {
+        setIsAnalyzing(false);
+        toast({
+          title: "Analysis complete",
+          description: "Your note has been analyzed"
+        });
+      })
       .catch(error => {
         console.error("Error during analysis:", error);
         toast({
@@ -183,8 +196,6 @@ export function useNoteEditor(noteId: string) {
           description: "There was a problem analyzing your note",
           variant: "destructive"
         });
-      })
-      .finally(() => {
         setIsAnalyzing(false);
       });
     

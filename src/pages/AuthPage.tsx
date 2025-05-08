@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, useAuthWithToast } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PenLine, Loader2, ArrowLeft } from 'lucide-react';
 
 const AuthPage: React.FC = () => {
-  const { user, signIn, signUp, loading } = useAuth();
+  // Use the toast-enhanced auth methods
+  const { user, loading } = useAuth();
+  const { signIn, signUp } = useAuthWithToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('login');
   

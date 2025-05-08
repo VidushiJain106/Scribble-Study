@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, useAuthWithToast } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -16,7 +16,8 @@ import { User, Settings, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function UserMenu() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const { signOut } = useAuthWithToast();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
 
