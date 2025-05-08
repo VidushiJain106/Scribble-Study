@@ -23,6 +23,7 @@ export interface Note {
   color: NoteColor;
   hasAttachments: boolean;
   hasDrawings: boolean;
+  folderId?: string; // Optional folder ID field
   attachments?: Attachment[];
   drawings?: Drawing[];
   analysis?: NoteAnalysis;

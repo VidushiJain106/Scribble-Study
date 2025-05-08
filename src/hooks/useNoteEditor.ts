@@ -6,6 +6,7 @@ import { useNoteState } from "./useNoteState";
 import { useNoteAnalysis } from "./useNoteAnalysis";
 import { useNoteSave } from "./useNoteSave";
 import { useNoteAttachments } from "./useNoteAttachments";
+import { useAutoSave } from "./useAutoSave";
 
 export function useNoteEditor(noteId: string) {
   const { user } = useAuth();
@@ -32,6 +33,13 @@ export function useNoteEditor(noteId: string) {
 
   // Get attachment functionality from custom hook - always call regardless of conditions
   const noteAttachments = useNoteAttachments(noteId);
+
+  // Set up auto-save functionality
+  useAutoSave(
+    noteState.title,
+    noteState.content,
+    (title, content) => noteSave.handleSave(title, content)
+  );
 
   const handleExplainClick = () => {
     navigate(`/note/${noteId}/explanation`);

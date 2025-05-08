@@ -1,19 +1,54 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNoteStore } from "@/lib/store";
 import { useCategoryStore } from "@/lib/categoryStore";
+import { useFolderStore, Folder } from "@/lib/folderStore";
 import { Note } from "@/types";
 import { formatDistanceToNow } from "date-fns";
-import { FileImage, Pen, Plus } from "lucide-react";
+import { FileImage, Pen, Plus, FolderIcon, Check, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState, useRef, useEffect } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 
-export function NoteList({ category }: { category?: string }) {
+interface NoteListProps {
+  category?: string;
+  folderId?: string;
+}
+
+export function NoteList({ category, folderId }: NoteListProps) {
   const notes = useNoteStore(state => state.notes);
   const createNote = useNoteStore(state => state.createNote);
+  const assignNoteToFolder = useNoteStore(state => state.assignNoteToFolder);
   const categoryItems = useCategoryStore(state => state.categoryItems);
+  const folders = useFolderStore(state => state.folders);
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // State for multi-select functionality
+  const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+  
+  // Drag-and-drop references
+  const dragItem = useRef<string | null>(null);
+  const dragOverItem = useRef<string | null>(null);
   
   // Get all subcategories for a category
   const getAllSubcategories = (categoryName: string): string[] => {
@@ -31,18 +66,32 @@ export function NoteList({ category }: { category?: string }) {
     return subCategories;
   };
   
-  // Filter notes by category and its subcategories if provided
-  const filteredNotes = category 
-    ? notes.filter(note => {
-        const categories = [category, ...getAllSubcategories(category)];
-        return categories.includes(note.category);
-      })
-    : notes;
+  // Filter notes by category/folder
+  let filteredNotes = notes;
+  
+  // Filter by category if specified
+  if (category) {
+    filteredNotes = filteredNotes.filter(note => {
+      const categories = [category, ...getAllSubcategories(category)];
+      return categories.includes(note.category);
+    });
+  }
+  
+  // Filter by folder if specified
+  if (folderId) {
+    filteredNotes = filteredNotes.filter(note => note.folderId === folderId);
+  }
   
   const handleCreateNote = async () => {
     if (!user) return;
     try {
       const newNoteId = await createNote(category as any);
+      
+      // If created in a folder, assign it to that folder
+      if (folderId) {
+        assignNoteToFolder(newNoteId, folderId);
+      }
+      
       navigate(`/note/${newNoteId}`);
     } catch (error) {
       console.error("Error creating note:", error);
@@ -50,51 +99,222 @@ export function NoteList({ category }: { category?: string }) {
   };
   
   const handleNoteClick = (noteId: string) => {
-    navigate(`/note/${noteId}`);
+    if (isSelectionMode) {
+      toggleNoteSelection(noteId);
+    } else {
+      navigate(`/note/${noteId}`);
+    }
   };
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
-      {/* Create New Note Card */}
-      <Card 
-        className="note-card border-dashed cursor-pointer hover:bg-accent/50 flex flex-col items-center justify-center h-64"
-        onClick={handleCreateNote}
-      >
-        <CardContent className="flex flex-col items-center justify-center p-6 h-full">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Plus className="h-8 w-8 text-primary" />
-          </div>
-          <CardTitle className="text-lg font-medium text-center mb-2">Create New Note</CardTitle>
-          <CardDescription className="text-center">
-            Add a new note to your collection
-          </CardDescription>
-        </CardContent>
-      </Card>
-      
-      {/* Note Cards */}
-      {filteredNotes.map((note) => (
-        <NoteCard 
-          key={note.id} 
-          note={note} 
-          onClick={() => handleNoteClick(note.id)} 
-        />
-      ))}
+  const toggleNoteSelection = (noteId: string) => {
+    setSelectedNotes(prev => 
+      prev.includes(noteId) 
+        ? prev.filter(id => id !== noteId) 
+        : [...prev, noteId]
+    );
+  };
 
-      {filteredNotes.length === 0 && (
-        <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
-          <p className="text-muted-foreground">No notes found in this category.</p>
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    if (isSelectionMode) {
+      setSelectedNotes([]);
+    }
+  };
+
+  const selectAllNotes = () => {
+    if (selectedNotes.length === filteredNotes.length) {
+      setSelectedNotes([]);
+    } else {
+      setSelectedNotes(filteredNotes.map(note => note.id));
+    }
+  };
+
+  const moveSelectedNotesToFolder = (targetFolderId: string) => {
+    selectedNotes.forEach(noteId => {
+      assignNoteToFolder(noteId, targetFolderId);
+    });
+    setSelectedNotes([]);
+    setIsSelectionMode(false);
+    setFolderDialogOpen(false);
+  };
+
+  // Drag handlers
+  const handleDragStart = (e: React.DragEvent, noteId: string) => {
+    e.dataTransfer.setData("noteId", noteId);
+    dragItem.current = noteId;
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  // Reset selection mode when navigating away
+  useEffect(() => {
+    return () => {
+      setIsSelectionMode(false);
+      setSelectedNotes([]);
+    };
+  }, [category, folderId]);
+
+  return (
+    <>
+      {isSelectionMode && selectedNotes.length > 0 && (
+        <div className="sticky top-0 z-10 bg-background p-2 mb-4 flex items-center justify-between border rounded-lg shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{selectedNotes.length} selected</span>
+            <Button variant="outline" size="sm" onClick={selectAllNotes}>
+              {selectedNotes.length === filteredNotes.length ? "Deselect All" : "Select All"}
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={() => setFolderDialogOpen(true)}
+            >
+              Move to Folder
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={toggleSelectionMode}
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
       )}
-    </div>
+
+      <div className="flex justify-end mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleSelectionMode}
+          className="text-sm"
+        >
+          {isSelectionMode ? "Cancel Selection" : "Select Notes"}
+        </Button>
+      </div>
+
+      <div 
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in"
+        onDragOver={handleDragOver}
+      >
+        {/* Create New Note Card */}
+        <Card 
+          className="note-card border-dashed cursor-pointer hover:bg-accent/50 flex flex-col items-center justify-center h-64"
+          onClick={handleCreateNote}
+        >
+          <CardContent className="flex flex-col items-center justify-center p-6 h-full">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Plus className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="text-lg font-medium text-center mb-2">Create New Note</CardTitle>
+            <CardDescription className="text-center">
+              Add a new note to your collection
+            </CardDescription>
+          </CardContent>
+        </Card>
+        
+        {/* Note Cards */}
+        {filteredNotes.map((note) => (
+          <div 
+            key={note.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, note.id)}
+          >
+            <NoteCard 
+              note={note} 
+              onClick={() => handleNoteClick(note.id)} 
+              isSelected={selectedNotes.includes(note.id)}
+              isSelectionMode={isSelectionMode}
+              onSelect={() => toggleNoteSelection(note.id)}
+            />
+          </div>
+        ))}
+
+        {filteredNotes.length === 0 && (
+          <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
+            <p className="text-muted-foreground">No notes found{category ? ` in this category` : folderId ? ` in this folder` : ''}.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Folder Selection Dialog */}
+      <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Move to Folder</DialogTitle>
+            <DialogDescription>
+              Select a folder to move {selectedNotes.length} note{selectedNotes.length > 1 ? 's' : ''}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-2 my-4 max-h-60 overflow-y-auto">
+            {folders.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">No folders available</p>
+            ) : (
+              folders.filter(folder => folder.id !== folderId).map(folder => (
+                <div 
+                  key={folder.id}
+                  className="flex items-center justify-between p-2 hover:bg-accent rounded-md cursor-pointer"
+                  onClick={() => moveSelectedNotesToFolder(folder.id)}
+                >
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: folder.color || '#4f46e5' }}
+                    />
+                    <span>{folder.name}</span>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Check className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFolderDialogOpen(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
-function NoteCard({ note, onClick }: { note: Note; onClick: () => void }) {
+function NoteCard({ 
+  note, 
+  onClick, 
+  isSelected = false,
+  isSelectionMode = false,
+  onSelect
+}: { 
+  note: Note; 
+  onClick: () => void;
+  isSelected?: boolean;
+  isSelectionMode?: boolean;
+  onSelect?: () => void;
+}) {
   return (
     <Card 
-      className={`note-card cursor-pointer h-64 bg-note-${note.color}-light hover:shadow-md transition-all duration-200`}
+      className={`note-card cursor-pointer h-64 bg-note-${note.color}-light hover:shadow-md transition-all duration-200 relative ${isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}
       onClick={onClick}
     >
+      {isSelectionMode && (
+        <div 
+          className="absolute top-2 left-2 z-10"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect?.();
+          }}
+        >
+          <Checkbox checked={isSelected} />
+        </div>
+      )}
       <CardHeader className="pb-2">
         <CardTitle className="line-clamp-2">{note.title}</CardTitle>
         <CardDescription>

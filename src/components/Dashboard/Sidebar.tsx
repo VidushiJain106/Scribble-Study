@@ -5,6 +5,7 @@ import { Plus, FolderPlus, FileText, Clock, GraduationCap } from "lucide-react";
 import { useNoteStore } from "@/lib/store";
 import { useCategoryStore } from "@/lib/categoryStore";
 import { UserMenu } from "./UserMenu";
+import { FoldersPanel } from "./FoldersPanel";
 import { useState } from "react";
 import { NoteCategory } from "@/types";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -65,24 +66,6 @@ export function Sidebar() {
         <Separator className="mb-4" />
       </div>
       
-      <div className="px-6">
-        <h4 className="mb-2 font-semibold text-sm">Add Category</h4>
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            placeholder="Category name"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            className="border rounded px-2 py-1 text-sm w-full"
-          />
-          <Button size="icon" onClick={handleCreateCategory}>
-            <FolderPlus className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-      
-      <Separator className="my-4" />
-      
       <div className="flex-1 px-6 overflow-y-auto">
         <h4 className="mb-2 font-semibold text-sm">Navigation</h4>
         <Button 
@@ -124,6 +107,27 @@ export function Sidebar() {
         </Button>
 
         <Separator className="my-4" />
+        
+        {/* Folders Panel */}
+        <FoldersPanel />
+        
+        <Separator className="my-4" />
+        
+        <div className="mb-4">
+          <h4 className="mb-2 font-semibold text-sm">Add Category</h4>
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              placeholder="Category name"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              className="border rounded px-2 py-1 text-sm w-full"
+            />
+            <Button size="icon" onClick={handleCreateCategory}>
+              <FolderPlus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
         
         <h4 className="mb-2 font-semibold text-sm">Categories</h4>
         {categories.map((category) => (

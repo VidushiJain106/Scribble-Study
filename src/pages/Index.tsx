@@ -4,12 +4,21 @@ import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { useNoteStore } from "@/lib/store";
 import { useCategoryStore } from "@/lib/categoryStore";
+import { useFolderStore } from "@/lib/folderStore";
 import { NoteCategory } from "@/types";
-import { FileText, Menu, PenLine, Plus, Loader2 } from "lucide-react";
+import { FileText, Menu, PenLine, Plus, Loader2, FolderDown, ChevronDown } from "lucide-react";
 import { useNavigate, useParams, Navigate } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Create a component for the floating trigger that will be conditionally rendered
 const FloatingSidebarTrigger = () => {
@@ -31,10 +40,14 @@ const Index = () => {
   const createNote = useNoteStore(state => state.createNote);
   const isLoading = useNoteStore(state => state.isLoading);
   const categoryItems = useCategoryStore(state => state.categoryItems);
+  const folders = useFolderStore(state => state.folders);
   const navigate = useNavigate();
   
   const { category } = useParams<{ category?: string }>();
   const { user, loading: authLoading } = useAuth();
+  
+  // Add state for folder filtering
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   
   // Initialize notes when component mounts and user is authenticated
   useEffect(() => {
@@ -66,6 +79,13 @@ const Index = () => {
       navigate(`/note/${newNoteId}`);
     } catch (error) {
       console.error("Error creating note:", error);
+    }
+  };
+
+  const handleFolderSelect = (folderId: string | null) => {
+    setSelectedFolder(folderId);
+    if (folderId) {
+      navigate(`/folder/${folderId}`);
     }
   };
 
@@ -103,21 +123,47 @@ const Index = () => {
               <FloatingSidebarTrigger />
               <h1 className="text-2xl font-bold">{pageTitle}</h1>
             </div>
-            <Button 
-              onClick={handleCreateNote} 
-              className="flex items-center gap-2 bg-violet-500 hover:bg-violet-600"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4" />
-              )}
-              <span>New Note</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Add folder selector dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <FolderDown className="h-4 w-4" />
+                    <span>{selectedFolder ? folders.find(f => f.id === selectedFolder)?.name : "All Folders"}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Filter by Folder</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleFolderSelect(null)}>
+                    All Folders
+                  </DropdownMenuItem>
+                  {folders.map(folder => (
+                    <DropdownMenuItem 
+                      key={folder.id} 
+                      onClick={() => handleFolderSelect(folder.id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: folder.color || '#4f46e5' }}
+                        />
+                        <span>{folder.name}</span>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                  {folders.length === 0 && (
+                    <DropdownMenuItem disabled>
+                      No folders created yet
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
           
-          {!category && (
+          {!category && !selectedFolder && (
             <div className="mb-8 p-8 bg-gradient-to-r from-violet-500 to-primary rounded-lg shadow-lg text-white">
               <div className="flex items-start justify-between">
                 <div>

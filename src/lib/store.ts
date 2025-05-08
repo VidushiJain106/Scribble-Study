@@ -22,6 +22,9 @@ interface NoteState {
   saveQuizToNote: (noteId: string, quiz: Quiz) => void;
   removeSavedExplanation: (noteId: string, explanationId: string) => void;
   removeSavedQuiz: (noteId: string, quizId: string) => void;
+  assignNoteToFolder: (noteId: string, folderId: string) => void;
+  removeNoteFromFolder: (noteId: string) => void;
+  getNotesInFolder: (folderId: string) => Note[];
 }
 
 export const useNoteStore = create<NoteState>()(
@@ -276,6 +279,31 @@ export const useNoteStore = create<NoteState>()(
       
       return { notes: updatedNotes };
     });
+  },
+  
+  assignNoteToFolder: (noteId, folderId) => {
+    set(state => ({
+      notes: state.notes.map(note => 
+        note.id === noteId 
+          ? { ...note, folderId, updatedAt: new Date() } 
+          : note
+      )
+    }));
+  },
+  
+  removeNoteFromFolder: (noteId) => {
+    set(state => ({
+      notes: state.notes.map(note => 
+        note.id === noteId 
+          ? { ...note, folderId: undefined, updatedAt: new Date() } 
+          : note
+      )
+    }));
+  },
+  
+  getNotesInFolder: (folderId) => {
+    const { notes } = get();
+    return notes.filter(note => note.folderId === folderId);
   }
     }),
     {

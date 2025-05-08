@@ -9,6 +9,7 @@ import { TabsContainer } from "./TabsContainer";
 import { AttachmentGallery } from "./AttachmentGallery";
 import { FloatingExplainButton } from "./FloatingExplainButton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAutoTitle } from "@/hooks/useAutoTitle";
 import { 
   Lightbulb, 
   ArrowLeft, 
@@ -16,7 +17,8 @@ import {
   Sparkles, 
   FileText,
   AlignJustify,
-  BookOpen
+  BookOpen,
+  Save
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +39,7 @@ export function Editor({ noteId }: EditorProps) {
     setActiveTab,
     textFormatting,
     isAnalyzing,
+    isSaving,
     handleSave,
     handleDrawingComplete,
     handleFileUpload,
@@ -47,6 +50,9 @@ export function Editor({ noteId }: EditorProps) {
     forceAnalysis,
     deleteNote
   } = useNoteEditor(noteId);
+
+  // Use the auto-title hook to generate titles from content
+  useAutoTitle(content, title, setTitle);
 
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [selectedText, setSelectedText] = useState("");
@@ -197,6 +203,12 @@ export function Editor({ noteId }: EditorProps) {
           style={textFormatting}
           onInput={(e) => setContent((e.target as HTMLDivElement).innerText)}
           onBlur={(e) => setContent((e.target as HTMLDivElement).innerText)}
+          onPaste={(e) => {
+            // Slight delay to ensure content is fully updated after paste
+            setTimeout(() => {
+              setContent(editorRef.current?.innerText || "");
+            }, 0);
+          }}
           onFocus={() => {
             // ensure innerText sync
             if (editorRef.current && editorRef.current.innerText !== content) {
@@ -346,13 +358,21 @@ export function Editor({ noteId }: EditorProps) {
           setTitle={setTitle}
           note={note}
           isAnalyzing={isAnalyzing}
-          handleSave={handleSave}
+          handleSave={(title, content) => handleSave(title, content)}
           deleteNote={deleteNote}
           handleFileUpload={handleFileUpload}
           handlePdfTextExtracted={handlePdfTextExtracted}
           handleExplainClick={handleExplainClick}
           forceAnalysis={forceAnalysis}
         />
+        
+        {/* Auto-save indicator */}
+        {isSaving && (
+          <div className="flex items-center justify-center gap-2 py-1 bg-muted/50 text-xs text-muted-foreground animate-pulse">
+            <Save className="h-3 w-3" />
+            <span>Saving...</span>
+          </div>
+        )}
       </div>
       
       <div className="flex-1 overflow-hidden">

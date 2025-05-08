@@ -1,13 +1,23 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Lightbulb, Save, Trash, BookOpen, BrainCircuit } from "lucide-react";
-import { FC } from "react";
+import { GraduationCap, Lightbulb, Trash, BookOpen, BrainCircuit } from "lucide-react";
+import { FC, useState } from "react";
 import { FileUploader } from "./FileUploader";
 import { Note } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { withSupabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { useNoteStore } from "@/lib/store";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface NoteActionsProps {
   noteId: string;
@@ -15,7 +25,7 @@ interface NoteActionsProps {
   setTitle: (title: string) => void;
   note: Note;
   isAnalyzing: boolean;
-  handleSave: () => void;
+  handleSave: (title: string, content: string) => void;
   deleteNote: (id: string) => void;
   handleFileUpload: (attachment: any) => void;
   handlePdfTextExtracted?: (text: string) => void;
@@ -39,6 +49,7 @@ export const NoteActions: FC<NoteActionsProps> = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const saveQuizToNote = useNoteStore(state => state.saveQuizToNote);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   
   // Check if the note has analysis data and is ready for explanation
   const showExplainButton = note.analysis && note.analysis.readyForExplanation;
@@ -51,6 +62,20 @@ export const NoteActions: FC<NoteActionsProps> = ({
     (note.savedExplanations && note.savedExplanations.length > 0) || 
     (note.savedQuizzes && note.savedQuizzes.length > 0);
     
+  const handleDeleteConfirm = () => {
+    deleteNote(noteId);
+    setIsDeleteConfirmOpen(false);
+    
+    // Navigate to the home screen after deleting the note
+    navigate('/');
+    
+    // Show a toast notification confirming deletion
+    toast({
+      title: "Note deleted",
+      description: "Your note has been permanently deleted"
+    });
+  };
+
   // Function to generate quiz directly from note content
   const handleGenerateQuiz = async () => {
     if (!note || !note.content || note.content.length < 30) {
@@ -194,18 +219,8 @@ export const NoteActions: FC<NoteActionsProps> = ({
           <Button 
             variant="outline" 
             size="icon" 
-            className="rounded-full" 
-            onClick={handleSave} 
-            aria-label="Save note"
-          >
-            <Save className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            size="icon" 
             className="rounded-full text-destructive hover:text-destructive" 
-            onClick={() => deleteNote(noteId)} 
+            onClick={() => setIsDeleteConfirmOpen(true)} 
             aria-label="Delete note"
           >
             <Trash className="h-4 w-4" />
@@ -213,7 +228,27 @@ export const NoteActions: FC<NoteActionsProps> = ({
         </div>
       </div>
       
-      {/* Remove the prominent explain button section since we now have a permanent button in the header */}
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this note?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the note
+              and all its content including attachments and associated resources.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

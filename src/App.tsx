@@ -12,6 +12,7 @@ import DocumentsPage from "./pages/DocumentsPage";
 import ExamPrepPage from "./pages/ExamPrepPage";
 import ExplanationPage from "./pages/ExplanationPage";
 import ResourcesPage from "./pages/ResourcesPage";
+import FolderPage from "./pages/FolderPage";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useEffect } from "react";
 import LandingPage from "./pages/LandingPage";
@@ -95,6 +96,13 @@ const App = () => {
                     <ErrorBoundary>
                       <ProtectedRoute>
                         <Index />
+                      </ProtectedRoute>
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/folder/:folderId" element={
+                    <ErrorBoundary>
+                      <ProtectedRoute>
+                        <FolderPage />
                       </ProtectedRoute>
                     </ErrorBoundary>
                   } />

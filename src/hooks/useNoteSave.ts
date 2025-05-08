@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNoteStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +11,7 @@ export function useNoteSave(noteId: string) {
   const { toast } = useToast();
   
   // Save note changes
-  const handleSave = async (title: string, content: string) => {
+  const handleSave = async (title: string, content: string, silent: boolean = false) => {
     if (!user) return;
     
     setIsSaving(true);
@@ -23,12 +22,16 @@ export function useNoteSave(noteId: string) {
         updatedAt: new Date()
       });
       
-      toast({
-        title: "Note saved",
-        description: "Your changes have been saved"
-      });
+      // Only show toast notification if not silent
+      if (!silent) {
+        toast({
+          title: "Note saved",
+          description: "Your changes have been saved"
+        });
+      }
     } catch (error) {
       console.error("Error saving note:", error);
+      // Always show error toasts, even in silent mode
       toast({
         title: "Error saving note",
         description: "There was a problem saving your note",
