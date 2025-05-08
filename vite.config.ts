@@ -20,11 +20,16 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Add proper HMR configuration to handle WebSocket connections
-  hmr: {
-    clientPort: 443, // Use HTTPS port for secure WebSocket
-    protocol: 'wss', // Use secure WebSocket protocol
-    host: 'c6ff1dcd-ea02-4da9-a97a-39609ec8b971.lovableproject.com', // Match the domain
-    overlay: false, // Disable the error overlay as it can cause issues
-  }
+  // Disable HMR completely in production mode
+  ...(mode === 'production' ? {
+    // No HMR configuration for production
+  } : {
+    // Add proper HMR configuration for development mode
+    hmr: {
+      clientPort: 443, // Use HTTPS port for secure WebSocket
+      protocol: 'wss', // Use secure WebSocket protocol
+      host: 'c6ff1dcd-ea02-4da9-a97a-39609ec8b971.lovableproject.com', // Match the domain
+      overlay: false, // Disable the error overlay as it can cause issues
+    }
+  })
 }));
