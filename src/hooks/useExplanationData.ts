@@ -15,7 +15,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
   const { toast } = useToast();
 
   /**
-   * Fetch explanation data from Supabase or generate new one
+   * Always generate a new explanation directly
    */
   const fetchExplanation = async () => {
     if (!noteId || !note || !note.analysis || !note.analysis.readyForExplanation) {
@@ -37,69 +37,47 @@ export function useExplanationData(noteId: string | undefined, note: any) {
         return null;
       }
       
-      console.log("Fetching explanation for note:", noteId);
+      console.log("Directly generating new explanation for note:", noteId);
       
-      // Use withSupabase helper to safely fetch or generate explanation
+      // Use withSupabase helper to generate explanation directly without checking for existing ones
       const explanation = await withSupabase(
         async (supabase) => {
           try {
-            // First check if we have a stored explanation
-            const { data: existingExplanation, error: fetchError } = await supabase
-              .from('explanations')
-              .select('*')
-              .eq('note_id', noteId)
-              .single();
+            // Skip checking for existing explanations - always generate new
+            console.log("Bypassing storage - generating fresh explanation");
             
-            if (fetchError && fetchError.code !== 'PGRST116') {
-              console.error("Error fetching existing explanation:", fetchError);
-              throw new Error(fetchError.message);
-            }
-            
-            if (existingExplanation) {
-              console.log("Found existing explanation");
-              // Ensure we properly type the response from Supabase
-              return {
-                id: existingExplanation.id as string,
-                noteId: existingExplanation.note_id as string,
-                topic: existingExplanation.topic as string,
-                title: existingExplanation.title as string,
-                content: existingExplanation.content as Explanation['content'],
-                createdAt: new Date(existingExplanation.created_at as string)
-              };
-            } else {
-              console.log("Generating new explanation");
-              // Generate a new explanation
-              const { data, error: fnError } = await supabase.functions.invoke('generate-explanation', {
-                body: {
-                  noteId,
-                  topic: note.analysis.mainTopic,
-                  concepts: note.analysis.concepts,
-                  noteContent: note.content
-                },
-              });
-              
-              if (fnError) {
-                console.error("Error invoking generate-explanation function:", fnError);
-                throw new Error(fnError.message || "Failed to generate explanation");
-              }
-              
-              if (!data) {
-                throw new Error("No data returned from explanation function");
-              }
-              
-              return {
+            // Generate a new explanation
+            const { data, error: fnError } = await supabase.functions.invoke('generate-explanation', {
+              body: {
                 noteId,
                 topic: note.analysis.mainTopic,
-                title: data.title,
-                content: {
-                  title: data.title,
-                  sections: data.sections,
-                  summary: data.summary,
-                  furtherResources: data.furtherResources
-                },
-                createdAt: new Date()
-              };
+                concepts: note.analysis.concepts,
+                noteContent: note.content
+              },
+            });
+            
+            if (fnError) {
+              console.error("Error invoking generate-explanation function:", fnError);
+              throw new Error(fnError.message || "Failed to generate explanation");
             }
+            
+            if (!data) {
+              throw new Error("No data returned from explanation function");
+            }
+            
+            return {
+              id: crypto.randomUUID(),
+              noteId,
+              topic: note.analysis.mainTopic,
+              title: data.title,
+              content: {
+                title: data.title,
+                sections: data.sections,
+                summary: data.summary,
+                furtherResources: data.furtherResources
+              },
+              createdAt: new Date()
+            };
           } catch (error) {
             console.error("Error in withSupabase callback:", error);
             throw error;
@@ -125,10 +103,10 @@ export function useExplanationData(noteId: string | undefined, note: any) {
       console.error("Error fetching explanation:", error);
       toast({
         title: "Error",
-        description: "An error occurred while fetching the explanation.",
+        description: "An error occurred while generating the explanation.",
         variant: "destructive",
       });
-      setError("Error fetching explanation");
+      setError("Error generating explanation");
     } finally {
       setLoading(false);
     }
@@ -137,7 +115,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
   };
 
   /**
-   * Generate or fetch quiz based on explanation
+   * Generate a new quiz each time without checking storage
    */
   const generateQuiz = async () => {
     if (!noteId || !explanation) return;
@@ -155,59 +133,41 @@ export function useExplanationData(noteId: string | undefined, note: any) {
         return;
       }
       
-      // Use withSupabase helper to safely fetch or generate quiz
+      console.log("Directly generating new quiz for note:", noteId);
+      
+      // Use withSupabase helper to generate quiz without checking storage
       const quiz = await withSupabase(
         async (supabase) => {
           try {
-            // Check if we have a stored quiz
-            const { data: existingQuiz, error: fetchError } = await supabase
-              .from('quizzes')
-              .select('*')
-              .eq('note_id', noteId)
-              .single();
+            // Skip checking for existing quiz - always generate new
+            console.log("Bypassing storage - generating fresh quiz");
             
-            if (fetchError && fetchError.code !== 'PGRST116') {
-              console.error("Error fetching existing quiz:", fetchError);
-              throw new Error(fetchError.message);
-            }
-            
-            if (existingQuiz) {
-              // Ensure we properly type the response from Supabase
-              return {
-                id: existingQuiz.id as string,
-                noteId: existingQuiz.note_id as string,
-                topic: existingQuiz.topic as string,
-                introduction: existingQuiz.introduction as string,
-                questions: existingQuiz.questions as Quiz['questions'],
-                createdAt: new Date(existingQuiz.created_at as string)
-              };
-            } else {
-              // Generate a new quiz
-              const { data, error: fnError } = await supabase.functions.invoke('generate-quiz', {
-                body: {
-                  noteId,
-                  topic: explanation.topic,
-                  explanation: JSON.stringify(explanation.content)
-                },
-              });
-              
-              if (fnError) {
-                console.error("Error invoking generate-quiz function:", fnError);
-                throw new Error(fnError.message || "Failed to generate quiz");
-              }
-              
-              if (!data) {
-                throw new Error("No data returned from quiz function");
-              }
-              
-              return {
+            // Generate a new quiz
+            const { data, error: fnError } = await supabase.functions.invoke('generate-quiz', {
+              body: {
                 noteId,
                 topic: explanation.topic,
-                introduction: data.introduction,
-                questions: data.questions,
-                createdAt: new Date()
-              };
+                explanation: JSON.stringify(explanation.content)
+              },
+            });
+            
+            if (fnError) {
+              console.error("Error invoking generate-quiz function:", fnError);
+              throw new Error(fnError.message || "Failed to generate quiz");
             }
+            
+            if (!data) {
+              throw new Error("No data returned from quiz function");
+            }
+            
+            return {
+              id: crypto.randomUUID(),
+              noteId,
+              topic: explanation.topic,
+              introduction: data.introduction,
+              questions: data.questions,
+              createdAt: new Date()
+            };
           } catch (error) {
             console.error("Error in quiz generation:", error);
             throw error;
@@ -228,7 +188,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
         });
       }
     } catch (error) {
-      console.error("Error fetching quiz:", error);
+      console.error("Error generating quiz:", error);
       toast({
         title: "Error",
         description: "An error occurred while generating the quiz.",

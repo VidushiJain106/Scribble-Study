@@ -55,13 +55,6 @@ serve(async (req) => {
       });
     }
     
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    );
-    
     // Parse request data
     const requestData = await req.json() as QuizRequest;
     
@@ -128,21 +121,8 @@ serve(async (req) => {
       const content = result.choices[0].message.content;
       quiz = JSON.parse(content);
       
-      // Store the quiz in Supabase
-      const { data, error } = await supabaseClient
-        .from('quizzes')
-        .upsert({
-          note_id: requestData.noteId,
-          topic: requestData.topic,
-          questions: quiz.questions,
-          introduction: quiz.introduction,
-          created_at: new Date().toISOString()
-        })
-        .select();
-      
-      if (error) {
-        console.error('Error storing quiz:', error);
-      }
+      // Skip storing the quiz in Supabase - we bypass database storage
+      console.log('Bypassing database storage for quiz');
     } catch (e) {
       console.error('Error parsing LLM response:', e);
       return new Response(JSON.stringify({ error: 'Error processing quiz response' }), {

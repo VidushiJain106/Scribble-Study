@@ -23,7 +23,7 @@ export function ExplanationError({
       case "not-ready":
         return "This note isn't ready for explanation yet";
       default:
-        return "Unable to load explanation";
+        return "Unable to generate explanation";
     }
   };
   
@@ -34,7 +34,7 @@ export function ExplanationError({
       case "not-ready":
         return "Try adding more content to your note so it can be analyzed properly.";
       default:
-        return "There was a problem loading the explanation. Please try again later.";
+        return "There was a problem generating the explanation. Please try again.";
     }
   };
   

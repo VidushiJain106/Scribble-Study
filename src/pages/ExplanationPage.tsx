@@ -10,6 +10,7 @@ import { useExplanationData } from "@/hooks/useExplanationData";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Page component for displaying explanations and quizzes
@@ -20,6 +21,7 @@ const ExplanationPage = () => {
   const navigate = useNavigate();
   const [showQuiz, setShowQuiz] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const { toast } = useToast();
   
   // Find the note in the store
   const note = noteId ? notes.find(n => n.id === noteId) : null;
@@ -50,21 +52,48 @@ const ExplanationPage = () => {
       return;
     }
     
+    // Only fetch on initial load or explicit retry
     if (retryCount === 0) {
-      fetchExplanation();
+      console.log("Initial explanation fetch");
+      fetchExplanation().catch((error) => {
+        console.error("Error during explanation fetch:", error);
+        toast({
+          title: "Error",
+          description: "Failed to generate explanation. Please try again.",
+          variant: "destructive",
+        });
+      });
     }
-  }, [noteId, note, navigate, fetchExplanation, retryCount]);
+  }, [noteId, note, navigate, fetchExplanation, retryCount, toast]);
   
   // Handle manual retry
   const handleRetry = () => {
     setRetryCount(prevCount => prevCount + 1);
-    fetchExplanation();
+    console.log("Retrying explanation generation");
+    fetchExplanation().catch((error) => {
+      console.error("Error during retry:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate explanation. Please try again later.",
+        variant: "destructive",
+      });
+    });
   };
   
   const handleTakeQuiz = async () => {
-    const quizData = await generateQuiz();
-    if (quizData) {
-      setShowQuiz(true);
+    try {
+      console.log("Generating quiz");
+      const quizData = await generateQuiz();
+      if (quizData) {
+        setShowQuiz(true);
+      }
+    } catch (error) {
+      console.error("Error generating quiz:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate quiz. Please try again later.",
+        variant: "destructive",
+      });
     }
   };
   
@@ -88,7 +117,7 @@ const ExplanationPage = () => {
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Failed to load explanation</AlertTitle>
             <AlertDescription>
-              There was a problem loading the explanation data.
+              There was a problem generating the explanation. This feature bypasses database storage and always creates new explanations.
             </AlertDescription>
           </Alert>
           
@@ -104,7 +133,11 @@ const ExplanationPage = () => {
     }
     
     if (!explanation) {
-      return <ExplanationError noteId={noteId} errorType="generic" />;
+      return <ExplanationError 
+               noteId={noteId} 
+               errorType="generic" 
+               onRetry={handleRetry} 
+             />;
     }
     
     if (showQuiz && quiz) {

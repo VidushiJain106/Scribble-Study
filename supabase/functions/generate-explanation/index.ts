@@ -48,7 +48,7 @@ serve(async (req) => {
     
     if (!apiKey) {
       console.error('API key not configured');
-      // For development - return mock data instead of error
+      // Always return mock data for development
       return new Response(JSON.stringify({
         title: "Understanding Carbon Dioxide Levels",
         sections: [
@@ -72,13 +72,6 @@ serve(async (req) => {
         status: 200,
       });
     }
-    
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    );
     
     // Parse request data
     const requestData = await req.json() as ExplanationRequest;
@@ -158,21 +151,8 @@ serve(async (req) => {
         const content = result.choices[0].message.content;
         explanation = JSON.parse(content);
         
-        // Store the explanation in Supabase
-        const { data, error } = await supabaseClient
-          .from('explanations')
-          .upsert({
-            note_id: requestData.noteId,
-            topic: requestData.topic,
-            title: explanation.title,
-            content: explanation,
-            created_at: new Date().toISOString()
-          })
-          .select();
-        
-        if (error) {
-          console.error('Error storing explanation:', error);
-        }
+        // Skip storing the explanation in Supabase - we bypass database storage
+        console.log('Bypassing database storage for explanation');
       } catch (e) {
         console.error('Error parsing LLM response:', e);
         return new Response(JSON.stringify({ error: 'Error processing explanation response' }), {
