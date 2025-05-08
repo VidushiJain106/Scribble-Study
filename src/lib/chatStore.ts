@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage, ChatMessageRole, ChatState, Note } from '@/types';
@@ -164,104 +165,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch (error) {
       console.error("Error in analyze note:", error);
       addMessage("I encountered an error analyzing your note. Please try again later.", "assistant");
-    } finally {
-      setLoading(false);
-    }
-  },
-
-  explainSnippet: async (snippet: string): Promise<string> => {
-    const { addMessage, setLoading } = get();
-    if (!snippet.trim()) return "";
-
-    setLoading(true);
-    addMessage(`Explaining: "${snippet.slice(0,40)}..."`, "assistant");
-
-    try {
-      const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
-      let explanation = "";
-
-      if (OPENAI_KEY) {
-        const res = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${OPENAI_KEY}`
-          },
-          body: JSON.stringify({
-            model: "gpt-3.5-turbo",
-            messages: [
-              { role: "system", content: "You are an educational assistant. Respond with a concise explanation (3-4 sentences)." },
-              { role: "user", content: `Explain the following snippet in easy language:\n\n${snippet}` }
-            ],
-            max_tokens: 150,
-            temperature: 0.7
-          })
-        });
-
-        const json = await res.json();
-        explanation = json?.choices?.[0]?.message?.content?.trim() || "";
-      }
-
-      if (!explanation) {
-        explanation = `This is a simulated explanation of the highlighted text. In production, this would be returned by your language model after analyzing the snippet: \n\n"${snippet}"`;
-      }
-
-      addMessage(explanation, "assistant");
-      return explanation;
-    } catch (err) {
-      console.error("explainSnippet error", err);
-      const fallback = `Sorry, I couldn't generate an explanation right now.`;
-      addMessage(fallback, "assistant");
-      return fallback;
-    } finally {
-      setLoading(false);
-    }
-  },
-
-  explainForMiddleSchooler: async (snippet: string): Promise<string> => {
-    const { addMessage, setLoading } = get();
-    if (!snippet.trim()) return "";
-
-    setLoading(true);
-    addMessage(`Explaining for a middle schooler: "${snippet.slice(0,30)}..."`, "assistant");
-
-    try {
-      const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
-      let explanation = "";
-
-      if (OPENAI_KEY) {
-        const res = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${OPENAI_KEY}`
-          },
-          body: JSON.stringify({
-            model: "gpt-3.5-turbo",
-            messages: [
-              { role: "system", content: "You are a helpful teaching assistant for middle school students. Explain concepts in simple, engaging language a 12-year-old would understand. Use analogies and examples from everyday life. Avoid complex terminology." },
-              { role: "user", content: `Explain this in a way a middle school student would understand:\n\n${snippet}` }
-            ],
-            max_tokens: 150,
-            temperature: 0.7
-          })
-        });
-
-        const json = await res.json();
-        explanation = json?.choices?.[0]?.message?.content?.trim() || "";
-      }
-
-      if (!explanation) {
-        explanation = `This is a simplified explanation for middle schoolers (simulated): ${snippet.slice(0, 50)}...`;
-      }
-
-      addMessage(explanation, "assistant");
-      return explanation;
-    } catch (err) {
-      console.error("explainForMiddleSchooler error", err);
-      const fallback = `Sorry, I couldn't generate a middle school explanation right now.`;
-      addMessage(fallback, "assistant");
-      return fallback;
     } finally {
       setLoading(false);
     }
