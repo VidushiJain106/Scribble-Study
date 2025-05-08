@@ -1,11 +1,10 @@
 
 import { useEffect } from "react";
 import { DrawingCanvas } from "./DrawingCanvas";
-import { FontFormatBar } from "./FontFormatBar";
 import { useNoteEditor } from "@/hooks/useNoteEditor";
 import { NoteActions } from "./NoteActions";
 import { TabsContainer } from "./TabsContainer";
-import { TextEditor } from "./TextEditor";
+import { RichTextEditor } from "./RichTextEditor";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -26,7 +25,6 @@ export function Editor({ noteId }: EditorProps) {
     setContent,
     activeTab,
     setActiveTab,
-    textFormatting,
     isAnalyzing,
     isLoading,
     isSaving,
@@ -56,17 +54,13 @@ export function Editor({ noteId }: EditorProps) {
     );
   }
   
-  // Text content tab
+  // Rich text editor tab
   const textContent = (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="sticky top-0 z-10 bg-background pb-2">
-        <FontFormatBar onFormatChange={handleFormatChange} />
-      </div>
       <div className="flex-1 flex flex-col overflow-auto relative">
-        <TextEditor
+        <RichTextEditor
           content={content}
           setContent={setContent}
-          textFormatting={textFormatting}
           attachments={note?.attachments || []}
           onDeleteAttachment={handleDeleteAttachment}
         />
