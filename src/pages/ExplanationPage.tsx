@@ -46,16 +46,17 @@ const ExplanationPage = () => {
     setShowQuiz(false);
   };
 
-  const handleGenerateMoreQuestions = async () => {
+  const handleGenerateMoreQuestions = async (difficulty?: string) => {
     if (!quiz) return;
     
     setIsGeneratingMoreQuestions(true);
     try {
       console.log("Generating more questions...");
       console.log("Current question count:", quiz.questions.length);
+      console.log("Selected difficulty:", difficulty || "mixed");
       
       // Force generate new questions and add them to existing ones
-      const updatedQuiz = await generateQuiz(true);
+      const updatedQuiz = await generateQuiz(true, difficulty);
       
       if (updatedQuiz) {
         console.log("Questions generated successfully");

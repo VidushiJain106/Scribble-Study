@@ -112,8 +112,10 @@ export function useExplanationData(noteId: string | undefined, note: any) {
 
   /**
    * Generate or fetch quiz based on explanation
+   * @param forceGenerate If true, generate new questions even if a quiz exists
+   * @param difficulty Optional difficulty level for generated questions (easy, moderate, hard, mixed)
    */
-  const generateQuiz = async (forceGenerate: boolean = false) => {
+  const generateQuiz = async (forceGenerate: boolean = false, difficulty?: string) => {
     if (!noteId || !explanation) return;
     
     setLoading(true);
@@ -165,7 +167,8 @@ export function useExplanationData(noteId: string | undefined, note: any) {
               noteId,
               topic: explanation.topic,
               explanation: JSON.stringify(explanation.content),
-              forceGenerate
+              forceGenerate,
+              difficulty: difficulty || 'mixed'
             },
           });
           
@@ -177,7 +180,8 @@ export function useExplanationData(noteId: string | undefined, note: any) {
           if (forceGenerate && quiz) {
             console.log("Merging new questions with existing ones", {
               existingQuestions: quiz.questions.length,
-              newQuestions: data.questions.length
+              newQuestions: data.questions.length,
+              difficulty: difficulty || 'mixed'
             });
             
             // Create a set of existing question IDs to detect duplicates
@@ -210,7 +214,8 @@ export function useExplanationData(noteId: string | undefined, note: any) {
       
       if (quizResult) {
         console.log("Quiz updated successfully", {
-          questionCount: quizResult.questions?.length || 0
+          questionCount: quizResult.questions?.length || 0,
+          difficulty: difficulty || 'mixed'
         });
         
         // Explicitly cast to Quiz type to ensure type safety

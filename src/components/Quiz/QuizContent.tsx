@@ -6,12 +6,18 @@ import { Quiz, QuizAnswer, QuizQuestion } from "@/types";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle, ChevronDown, ChevronUp, HelpCircle, Lightbulb, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { withSupabase, getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface QuizContentProps {
   quiz: Quiz;
   onComplete: () => void;
   onBackToExplanation: () => void;
-  onGenerateMoreQuestions?: () => Promise<void>;
+  onGenerateMoreQuestions?: (difficulty?: string) => Promise<void>;
 }
 
 export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateMoreQuestions }: QuizContentProps) {
@@ -210,13 +216,13 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
     }
   };
 
-  const handleGenerateMoreQuestions = async () => {
+  const handleGenerateMoreQuestions = async (difficulty?: string) => {
     if (!onGenerateMoreQuestions) return;
     
     setIsGeneratingMore(true);
     try {
-      console.log("Requesting more questions...");
-      await onGenerateMoreQuestions();
+      console.log("Requesting more questions with difficulty:", difficulty);
+      await onGenerateMoreQuestions(difficulty);
     } catch (error) {
       console.error("Error generating more questions:", error);
       toast({
@@ -246,15 +252,32 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold">Test Your Knowledge</h1>
         {onGenerateMoreQuestions && (
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-2"
-            onClick={handleGenerateMoreQuestions}
-            disabled={isGeneratingMore}
-          >
-            <Plus className="h-4 w-4" />
-            {isGeneratingMore ? "Generating..." : "More Questions"}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                disabled={isGeneratingMore}
+              >
+                <Plus className="h-4 w-4" />
+                {isGeneratingMore ? "Generating..." : "More Questions"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("mixed")}>
+                <span className="font-medium">Mixed Difficulty</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("easy")}>
+                <span className="text-green-500 font-medium">Easy</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("moderate")}>
+                <span className="text-yellow-500 font-medium">Moderate</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("hard")}>
+                <span className="text-red-500 font-medium">Hard</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
       
@@ -369,14 +392,31 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
                   Continue Learning
                 </Button>
                 {onGenerateMoreQuestions && (
-                  <Button
-                    onClick={handleGenerateMoreQuestions}
-                    disabled={isGeneratingMore}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {isGeneratingMore ? "Generating..." : "Generate More Questions"}
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        disabled={isGeneratingMore}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        {isGeneratingMore ? "Generating..." : "Generate More Questions"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("mixed")}>
+                        <span className="font-medium">Mixed Difficulty</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("easy")}>
+                        <span className="text-green-500 font-medium">Easy</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("moderate")}>
+                        <span className="text-yellow-500 font-medium">Moderate</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("hard")}>
+                        <span className="text-red-500 font-medium">Hard</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
             </div>
