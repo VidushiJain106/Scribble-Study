@@ -13,6 +13,8 @@ export default defineConfig(({ mode }) => ({
       // Fix for __WS_TOKEN__ not defined error
       clientPort: 443,
       overlay: true,
+      // Adding more robust configuration
+      path: "/__hmr",
     },
   },
   plugins: [
@@ -23,6 +25,16 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  build: {
+    // Improve production build configuration
+    sourcemap: false,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+      },
     },
   },
 }));

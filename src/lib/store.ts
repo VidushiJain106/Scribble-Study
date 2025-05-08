@@ -1,4 +1,4 @@
-
+import React, { useEffect } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,7 +8,6 @@ import { useCategoryStore } from './categoryStore';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import React, { useEffect } from 'react';
 
 interface NoteState {
   notes: Note[];
@@ -350,7 +349,7 @@ export const useNoteStore = create<NoteState>()(
 );
 
 // Now create a component to load the user's notes when authenticated
-export const NotesInitializer = () => {
+export const NotesInitializer: React.FC = () => {
   const { user } = useAuth();
   const loadNotes = useNoteStore(state => state.loadNotes);
   const { toast } = useToast();
