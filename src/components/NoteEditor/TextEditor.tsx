@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Lightbulb } from "lucide-react";
@@ -29,6 +28,16 @@ export function TextEditor({
   const [openSummary, setOpenSummary] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [middleSchoolExplanation, setMiddleSchoolExplanation] = useState<string | null>(null);
+
+  // Initialize the editor with content when the component mounts or content changes
+  useEffect(() => {
+    if (editorRef.current) {
+      // Properly update the content without affecting cursor position
+      if (editorRef.current.innerText !== content) {
+        editorRef.current.innerText = content;
+      }
+    }
+  }, [content]);
 
   const handleExplainSelected = () => {
     const explainSnippet = useChatStore.getState().explainSnippet;
@@ -135,14 +144,14 @@ export function TextEditor({
         contentEditable
         suppressContentEditableWarning
         className="flex-1 min-h-0 outline-none p-2 whitespace-pre-wrap"
-        style={textFormatting}
-        onInput={(e) => setContent((e.target as HTMLDivElement).innerText)}
-        onBlur={(e) => setContent((e.target as HTMLDivElement).innerText)}
-        onFocus={() => {
-          // ensure innerText sync
-          if (editorRef.current && editorRef.current.innerText !== content) {
-            editorRef.current.innerText = content;
-          }
+        style={{ ...textFormatting, direction: 'ltr' }} // Explicitly set left-to-right text direction
+        onInput={(e) => {
+          const newContent = (e.target as HTMLDivElement).innerText;
+          setContent(newContent);
+        }}
+        onBlur={(e) => {
+          const newContent = (e.target as HTMLDivElement).innerText;
+          setContent(newContent);
         }}
       >
         {content}
