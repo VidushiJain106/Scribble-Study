@@ -9,8 +9,17 @@ import { TabsContainer } from "./TabsContainer";
 import { AttachmentGallery } from "./AttachmentGallery";
 import { FloatingExplainButton } from "./FloatingExplainButton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Lightbulb, ArrowLeft } from "lucide-react";
+import { 
+  Lightbulb, 
+  ArrowLeft, 
+  List, 
+  Sparkles, 
+  FileText,
+  AlignJustify,
+  BookOpen
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useChatStore } from "@/lib/chatStore";
 
 interface EditorProps {
@@ -45,6 +54,10 @@ export function Editor({ noteId }: EditorProps) {
   const [openSummary, setOpenSummary] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [middleSchoolExplanation, setMiddleSchoolExplanation] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [simplified, setSimplified] = useState<string | null>(null);
+  const [examples, setExamples] = useState<string | null>(null);
+  const [activeExplanationTab, setActiveExplanationTab] = useState<string>("explain");
 
   const generateSummary = (text: string) => {
     // Very naive placeholder summary logic
@@ -62,6 +75,24 @@ export function Editor({ noteId }: EditorProps) {
     const explainForMiddleSchooler = useChatStore.getState().explainForMiddleSchooler;
     setMiddleSchoolExplanation('Generating middle school explanation...');
     explainForMiddleSchooler(selectedText).then(exp => setMiddleSchoolExplanation(exp));
+  };
+
+  const handleSummarize = () => {
+    const summarizeSnippet = useChatStore.getState().summarizeSnippet;
+    setSummary('Generating summary...');
+    summarizeSnippet(selectedText).then(sum => setSummary(sum));
+  };
+
+  const handleSimplify = () => {
+    const simplifySnippet = useChatStore.getState().simplifySnippet;
+    setSimplified('Simplifying text...');
+    simplifySnippet(selectedText).then(simp => setSimplified(simp));
+  };
+
+  const handleGenerateExamples = () => {
+    const generateExamples = useChatStore.getState().generateExamples;
+    setExamples('Generating examples...');
+    generateExamples(selectedText).then(ex => setExamples(ex));
   };
 
   // Setup effect to automatically trigger analysis when content changes
@@ -135,6 +166,14 @@ export function Editor({ noteId }: EditorProps) {
     return () => document.removeEventListener("selectionchange", handleSelection);
   }, []);
 
+  useEffect(() => {
+    // When opening the explanation dialog, ensure we generate an explanation
+    // if one isn't already there
+    if (openSummary && !explanation && selectedText) {
+      handleExplainSelected();
+    }
+  }, [openSummary, explanation, selectedText]);
+
   if (!note) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -180,10 +219,10 @@ export function Editor({ noteId }: EditorProps) {
         )}
 
         <Dialog open={openSummary} onOpenChange={setOpenSummary}>
-          <DialogContent className="sm:max-w-[550px]">
+          <DialogContent className="sm:max-w-[650px]">
             <DialogHeader>
               <div className="flex items-center justify-between mb-2">
-                <DialogTitle className="text-xl">Explanation</DialogTitle>
+                <DialogTitle className="text-xl">AI Analysis</DialogTitle>
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -195,30 +234,92 @@ export function Editor({ noteId }: EditorProps) {
                 </Button>
               </div>
             </DialogHeader>
-            <div className="space-y-4 mt-2">
-              <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap">
-                {explanation || "Highlight text to generate an explanation..."}
-              </div>
+            
+            <Tabs 
+              defaultValue="explain" 
+              value={activeExplanationTab} 
+              onValueChange={setActiveExplanationTab}
+              className="w-full"
+            >
+              <TabsList className="grid grid-cols-5 mb-4">
+                <TabsTrigger value="explain" onClick={handleExplainSelected} className="flex items-center gap-1">
+                  <Lightbulb className="h-4 w-4" />
+                  <span className="hidden sm:inline">Explain</span>
+                </TabsTrigger>
+                <TabsTrigger value="summarize" onClick={handleSummarize} className="flex items-center gap-1">
+                  <List className="h-4 w-4" />
+                  <span className="hidden sm:inline">Summarize</span>
+                </TabsTrigger>
+                <TabsTrigger value="simplify" onClick={handleSimplify} className="flex items-center gap-1">
+                  <AlignJustify className="h-4 w-4" />
+                  <span className="hidden sm:inline">Simplify</span>
+                </TabsTrigger>
+                <TabsTrigger value="examples" onClick={handleGenerateExamples} className="flex items-center gap-1">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="hidden sm:inline">Examples</span>
+                </TabsTrigger>
+                <TabsTrigger value="middle-school" onClick={handleMiddleSchoolExplain} className="flex items-center gap-1">
+                  <BookOpen className="h-4 w-4" />
+                  <span className="hidden sm:inline">Kid-friendly</span>
+                </TabsTrigger>
+              </TabsList>
               
-              {!middleSchoolExplanation && (
-                <Button 
-                  onClick={handleMiddleSchoolExplain}
-                  size="sm"
-                  variant="outline"
-                  className="mt-2"
-                >
-                  Explain to a Middle Schooler
-                </Button>
-              )}
-              
-              {middleSchoolExplanation && (
-                <div className="mt-4 border-t pt-4">
-                  <h4 className="text-sm font-medium mb-2">Middle School Explanation:</h4>
-                  <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap">
-                    {middleSchoolExplanation}
-                  </div>
+              {selectedText ? (
+                <>
+                  {activeExplanationTab === "explain" && (
+                    <div className="space-y-4">
+                      <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap min-h-[150px]">
+                        {explanation || "Generating explanation..."}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {activeExplanationTab === "summarize" && (
+                    <div className="space-y-4">
+                      <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap min-h-[150px]">
+                        {summary || "Generating summary..."}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {activeExplanationTab === "simplify" && (
+                    <div className="space-y-4">
+                      <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap min-h-[150px]">
+                        {simplified || "Simplifying text..."}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {activeExplanationTab === "examples" && (
+                    <div className="space-y-4">
+                      <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap min-h-[150px]">
+                        {examples || "Generating examples..."}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {activeExplanationTab === "middle-school" && (
+                    <div className="space-y-4">
+                      <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap min-h-[150px]">
+                        {middleSchoolExplanation || "Generating kid-friendly explanation..."}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="bg-muted rounded-md p-8 text-center text-muted-foreground">
+                  <Lightbulb className="h-10 w-10 mx-auto mb-4 opacity-50" />
+                  <p className="text-sm mb-2">No text selected</p>
+                  <p className="text-xs max-w-md mx-auto">
+                    Highlight some text in your note to get AI-powered explanations, 
+                    summaries, simplifications, and examples.
+                  </p>
                 </div>
               )}
+            </Tabs>
+            
+            <div className="text-xs text-muted-foreground mt-2">
+              Select text and choose an analysis type to get AI-powered insights.
             </div>
           </DialogContent>
         </Dialog>

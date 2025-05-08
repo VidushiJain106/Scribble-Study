@@ -143,6 +143,9 @@ export interface ChatState {
   analyzeNote: (note: Note) => void;
   explainSnippet: (snippet: string) => Promise<string>;
   explainForMiddleSchooler: (snippet: string) => Promise<string>;
+  summarizeSnippet: (snippet: string) => Promise<string>;
+  simplifySnippet: (snippet: string) => Promise<string>;
+  generateExamples: (snippet: string) => Promise<string>;
 }
 
 // New types for LLM-powered features
