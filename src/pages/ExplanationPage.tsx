@@ -51,11 +51,18 @@ const ExplanationPage = () => {
     
     setIsGeneratingMoreQuestions(true);
     try {
-      // Force generate new questions and add them to existing ones
-      await generateQuiz(true);
+      console.log("Generating more questions...");
+      console.log("Current question count:", quiz.questions.length);
       
-      // No need to update the state manually since useExplanationData
-      // will update the quiz state with the combined questions
+      // Force generate new questions and add them to existing ones
+      const updatedQuiz = await generateQuiz(true);
+      
+      if (updatedQuiz) {
+        console.log("Questions generated successfully");
+        console.log("New question count:", updatedQuiz.questions.length);
+      } else {
+        console.warn("Failed to update quiz with new questions");
+      }
     } catch (error) {
       console.error("Error generating more questions:", error);
     } finally {

@@ -159,7 +159,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
             }
           }
           
-          // Generate a new quiz
+          // Generate a new quiz or additional questions
           const { data, error } = await supabase.functions.invoke('generate-quiz', {
             body: {
               noteId,
@@ -173,22 +173,30 @@ export function useExplanationData(noteId: string | undefined, note: any) {
             throw new Error(error.message);
           }
           
-          // If we're generating more questions (forceGenerate is true) and we have an existing quiz
+          // If we're generating more questions (forceGenerate is true) and we already have a quiz state
           if (forceGenerate && quiz) {
-            // Create a set of existing question IDs to avoid duplicates
+            console.log("Merging new questions with existing ones", {
+              existingQuestions: quiz.questions.length,
+              newQuestions: data.questions.length
+            });
+            
+            // Create a set of existing question IDs to detect duplicates
             const existingIds = new Set(quiz.questions.map(q => q.id));
             
-            // Filter out any duplicate questions that might have the same ID
-            const newUniqueQuestions = data.questions.filter(q => !existingIds.has(q.id));
+            // Generate new IDs for the new questions to avoid any conflicts
+            const newQuestions = data.questions.map(q => ({
+              ...q,
+              id: `new-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+            }));
             
-            // Return a combined quiz with all questions
+            // Return a new quiz object with combined questions
             return {
               ...quiz,
-              questions: [...quiz.questions, ...newUniqueQuestions],
+              questions: [...quiz.questions, ...newQuestions],
             };
           }
           
-          // Otherwise return a new quiz
+          // Otherwise return a brand new quiz
           return {
             noteId,
             topic: explanation.topic,
@@ -201,6 +209,10 @@ export function useExplanationData(noteId: string | undefined, note: any) {
       );
       
       if (quizResult) {
+        console.log("Quiz updated successfully", {
+          questionCount: quizResult.questions?.length || 0
+        });
+        
         // Explicitly cast to Quiz type to ensure type safety
         setQuiz(quizResult as Quiz);
         return quizResult as Quiz;

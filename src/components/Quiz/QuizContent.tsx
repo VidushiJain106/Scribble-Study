@@ -20,7 +20,31 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
+  const [questionCount, setQuestionCount] = useState(quiz?.questions?.length || 0);
   const { toast } = useToast();
+  
+  // Track when the quiz questions change
+  useEffect(() => {
+    if (quiz?.questions?.length !== questionCount) {
+      console.log("Quiz questions changed:", {
+        previous: questionCount,
+        current: quiz?.questions?.length
+      });
+      
+      setQuestionCount(quiz?.questions?.length || 0);
+      
+      // If new questions were added and we have more than before
+      if (quiz?.questions?.length > questionCount) {
+        // Optionally navigate to the first new question
+        setCurrentQuestionIndex(questionCount);
+        
+        toast({
+          title: "New questions added",
+          description: `${quiz.questions.length - questionCount} new questions have been added to the quiz.`,
+        });
+      }
+    }
+  }, [quiz?.questions]);
   
   // Update currentQuestionIndex if questionId no longer exists (after quiz refresh)
   useEffect(() => {
@@ -191,12 +215,10 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
     
     setIsGeneratingMore(true);
     try {
+      console.log("Requesting more questions...");
       await onGenerateMoreQuestions();
-      toast({
-        title: "Success",
-        description: "New questions have been added to your quiz!",
-      });
     } catch (error) {
+      console.error("Error generating more questions:", error);
       toast({
         title: "Error",
         description: "Failed to generate more questions. Please try again.",
@@ -243,7 +265,7 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
           <Button
             key={q.id}
             variant={currentQuestionIndex === idx ? "default" : "outline"}
-            className={`${answers[q.id]?.isCorrect === true ? "border-green-500" : ""}`}
+            className={`${answers[q.id]?.isCorrect === true ? "border-green-500" : ""} ${idx >= questionCount - (quiz.questions.length - questionCount) && idx < quiz.questions.length ? "bg-opacity-80 border-blue-400" : ""}`}
             onClick={() => setCurrentQuestionIndex(idx)}
           >
             Q{idx + 1}
