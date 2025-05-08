@@ -1,16 +1,18 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface ExplanationErrorProps {
   noteId?: string;
   errorType?: "not-found" | "not-ready" | "generic";
+  onRetry?: () => void;
 }
 
 export function ExplanationError({ 
   noteId, 
-  errorType = "generic" 
+  errorType = "generic",
+  onRetry
 }: ExplanationErrorProps) {
   const navigate = useNavigate();
   
@@ -44,14 +46,28 @@ export function ExplanationError({
         </div>
         <h1 className="text-3xl font-bold mb-4">{getErrorMessage()}</h1>
         <p className="text-muted-foreground mb-8 text-lg">{getErrorDescription()}</p>
-        <Button 
-          onClick={() => navigate(noteId ? `/note/${noteId}` : '/')} 
-          className="flex items-center gap-2 mx-auto px-6 py-5"
-          size="lg"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          {noteId ? "Return to note" : "Return to notes"}
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button 
+            onClick={() => navigate(noteId ? `/note/${noteId}` : '/')} 
+            className="flex items-center gap-2"
+            size="lg"
+            variant="outline"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            {noteId ? "Return to note" : "Return to notes"}
+          </Button>
+          
+          {onRetry && (
+            <Button 
+              onClick={onRetry} 
+              className="flex items-center gap-2"
+              size="lg"
+            >
+              <RefreshCw className="h-5 w-5" />
+              Try again
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
