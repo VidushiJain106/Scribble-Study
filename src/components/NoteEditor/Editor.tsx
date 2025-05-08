@@ -144,14 +144,16 @@ export function Editor({ noteId }: EditorProps) {
   
   // Text content tab
   const textContent = (
-    <>
-      <FontFormatBar onFormatChange={handleFormatChange} />
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="sticky top-0 z-10 bg-background pb-2">
+        <FontFormatBar onFormatChange={handleFormatChange} />
+      </div>
       <div className="flex-1 flex flex-col overflow-auto relative">
         <div
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          className="flex-1 min-h-0 outline-none p-0 whitespace-pre-wrap"
+          className="flex-1 min-h-0 outline-none p-2 whitespace-pre-wrap"
           style={textFormatting}
           onInput={(e) => setContent((e.target as HTMLDivElement).innerText)}
           onBlur={(e) => setContent((e.target as HTMLDivElement).innerText)}
@@ -225,7 +227,7 @@ export function Editor({ noteId }: EditorProps) {
         attachments={note.attachments || []} 
         onDelete={handleDeleteAttachment} 
       />
-    </>
+    </div>
   );
 
   // Drawing content tab
@@ -235,26 +237,30 @@ export function Editor({ noteId }: EditorProps) {
 
   // We're no longer showing the floating explain button since we have a permanent one in the header
   return (
-    <div className="flex flex-col h-full">
-      <NoteActions 
-        noteId={noteId}
-        title={title}
-        setTitle={setTitle}
-        note={note}
-        isAnalyzing={isAnalyzing}
-        handleSave={handleSave}
-        deleteNote={deleteNote}
-        handleFileUpload={handleFileUpload}
-        handleExplainClick={handleExplainClick}
-        forceAnalysis={forceAnalysis}
-      />
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="sticky top-0 z-20 bg-background">
+        <NoteActions 
+          noteId={noteId}
+          title={title}
+          setTitle={setTitle}
+          note={note}
+          isAnalyzing={isAnalyzing}
+          handleSave={handleSave}
+          deleteNote={deleteNote}
+          handleFileUpload={handleFileUpload}
+          handleExplainClick={handleExplainClick}
+          forceAnalysis={forceAnalysis}
+        />
+      </div>
       
-      <TabsContainer 
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        textContent={textContent}
-        drawContent={drawContent}
-      />
+      <div className="flex-1 overflow-hidden">
+        <TabsContainer 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          textContent={textContent}
+          drawContent={drawContent}
+        />
+      </div>
     </div>
   );
 }
