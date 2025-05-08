@@ -67,7 +67,8 @@ export function useExplanationData(noteId: string | undefined, note: any) {
           topic: existingExplanation.topic,
           title: existingExplanation.title,
           content: existingExplanation.content,
-          createdAt: new Date(existingExplanation.created_at)
+          // Fix for TypeScript error: ensure created_at is treated as a valid date input
+          createdAt: new Date(existingExplanation.created_at as string)
         };
         
         setExplanation(formattedExplanation);
@@ -137,7 +138,8 @@ export function useExplanationData(noteId: string | undefined, note: any) {
               topic: insertedExplanation.topic,
               title: insertedExplanation.title,
               content: insertedExplanation.content,
-              createdAt: new Date(insertedExplanation.created_at)
+              // Fix for TypeScript error: ensure created_at is treated as a valid date input
+              createdAt: new Date(insertedExplanation.created_at as string)
             };
           } catch (error) {
             console.error("Error in withSupabase callback:", error);
@@ -215,7 +217,8 @@ export function useExplanationData(noteId: string | undefined, note: any) {
           topic: existingQuiz.topic,
           introduction: existingQuiz.introduction,
           questions: existingQuiz.questions,
-          createdAt: new Date(existingQuiz.created_at)
+          // Fix for TypeScript error: ensure created_at is treated as a valid date input
+          createdAt: new Date(existingQuiz.created_at as string)
         };
         
         setQuiz(formattedQuiz);
@@ -278,7 +281,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
               topic: insertedQuiz.topic,
               introduction: insertedQuiz.introduction,
               questions: insertedQuiz.questions,
-              createdAt: new Date(insertedQuiz.created_at)
+              createdAt: new Date(insertedQuiz.created_at as string)
             };
           } catch (error) {
             console.error("Error in quiz generation:", error);
