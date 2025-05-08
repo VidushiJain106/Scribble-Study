@@ -86,6 +86,17 @@ export function Sidebar() {
       <div className="flex-1 px-6 overflow-y-auto">
         <h4 className="mb-2 font-semibold text-sm">Navigation</h4>
         <Button 
+          variant="default"
+          className="justify-start w-full mb-2 flex items-center gap-2 bg-primary text-primary-foreground"
+          onClick={() => {
+            const newId = createNote();
+            handleNavigate(`/note/${newId}`);
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          New Note
+        </Button>
+        <Button 
           variant={isActive('/') ? "secondary" : "ghost"}
           className={`justify-start w-full mb-2 flex items-center gap-2 ${isActive('/') ? 'bg-primary/10 text-primary font-medium' : ''}`}
           onClick={() => handleNavigate("/app")}
