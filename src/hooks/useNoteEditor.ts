@@ -56,14 +56,19 @@ export function useNoteEditor(noteId: string) {
           ...note,
           content
         };
-        analyzeNote(updatedNote)
-          .then(() => {
+        
+        // Fixed: analyzeNote returns a Promise so we use async/await
+        const performAnalysis = async () => {
+          try {
+            await analyzeNote(updatedNote);
             setIsAnalyzing(false);
-          })
-          .catch((error) => {
+          } catch (error) {
             console.error("Analysis error:", error);
             setIsAnalyzing(false);
-          });
+          }
+        };
+        
+        performAnalysis();
       }, 5000)); // Wait 5 seconds after typing stops
     }
 
@@ -181,15 +186,16 @@ export function useNoteEditor(noteId: string) {
       content
     };
     
-    analyzeNote(updatedNote)
-      .then(() => {
+    // Fixed: analyzeNote returns a Promise so we use async/await
+    const performAnalysis = async () => {
+      try {
+        await analyzeNote(updatedNote);
         setIsAnalyzing(false);
         toast({
           title: "Analysis complete",
           description: "Your note has been analyzed"
         });
-      })
-      .catch(error => {
+      } catch (error) {
         console.error("Error during analysis:", error);
         toast({
           title: "Analysis failed",
@@ -197,7 +203,10 @@ export function useNoteEditor(noteId: string) {
           variant: "destructive"
         });
         setIsAnalyzing(false);
-      });
+      }
+    };
+    
+    performAnalysis();
     
     toast({
       title: "Analysis requested",
