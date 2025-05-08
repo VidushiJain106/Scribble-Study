@@ -1,3 +1,4 @@
+
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -8,6 +9,7 @@ import { UserMenu } from "./UserMenu";
 import { useState } from "react";
 import { NoteCategory } from "@/types";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Input } from "@/components/ui/input";
 
 export function Sidebar() {
   const navigate = useNavigate();
@@ -18,11 +20,13 @@ export function Sidebar() {
   const categories = useCategoryStore(state => state.categories);
   const categoryItems = useCategoryStore(state => state.categoryItems);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
   
   const handleCreateCategory = () => {
     if (newCategoryName.trim() !== "") {
       createCategory(newCategoryName);
       setNewCategoryName("");
+      setIsAddingCategory(false);
     }
   };
   
@@ -64,24 +68,6 @@ export function Sidebar() {
         </Button>
         <Separator className="mb-4" />
       </div>
-      
-      <div className="px-6">
-        <h4 className="mb-2 font-semibold text-sm">Add Category</h4>
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            placeholder="Category name"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            className="border rounded px-2 py-1 text-sm w-full"
-          />
-          <Button size="icon" onClick={handleCreateCategory}>
-            <FolderPlus className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-      
-      <Separator className="my-4" />
       
       <div className="flex-1 px-6 overflow-y-auto">
         <h4 className="mb-2 font-semibold text-sm">Navigation</h4>
@@ -125,17 +111,58 @@ export function Sidebar() {
 
         <Separator className="my-4" />
         
-        <h4 className="mb-2 font-semibold text-sm">Categories</h4>
-        {categories.map((category) => (
-          <Button
-            key={category}
-            variant="ghost"
-            className="justify-start w-full"
-            onClick={() => handleCategoryClick(category)}
-          >
-            {category}
-          </Button>
-        ))}
+        <div className="flex flex-col space-y-1">
+          <h4 className="mb-2 font-semibold text-sm">Categories</h4>
+          
+          {categories.map((category) => (
+            <Button
+              key={category}
+              variant="ghost"
+              className="justify-start w-full"
+              onClick={() => handleCategoryClick(category)}
+            >
+              {category}
+            </Button>
+          ))}
+          
+          {isAddingCategory ? (
+            <div className="flex space-x-2 mt-1 mb-2">
+              <Input
+                type="text"
+                placeholder="Category name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                className="h-8 text-sm"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateCategory();
+                  } else if (e.key === 'Escape') {
+                    setIsAddingCategory(false);
+                    setNewCategoryName("");
+                  }
+                }}
+              />
+              <Button 
+                size="sm" 
+                onClick={handleCreateCategory}
+                className="h-8"
+              >
+                Add
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="justify-start w-full text-muted-foreground hover:text-foreground"
+              onClick={() => setIsAddingCategory(true)}
+            >
+              <Plus className="h-3.5 w-3.5 mr-2" />
+              Add Category
+            </Button>
+          )}
+        </div>
       </div>
       
       <Separator className="my-4" />
