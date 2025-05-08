@@ -1,6 +1,6 @@
 
 import { useNoteStore } from "@/lib/store";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNoteState } from "./useNoteState";
@@ -14,6 +14,13 @@ export function useNoteEditor(noteId: string) {
   
   const [activeTab, setActiveTab] = useState("text");
   const navigate = useNavigate();
+
+  // Redirect if no user is found
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
 
   // Get note state from custom hook - always call hooks regardless of conditions
   const noteState = useNoteState(noteId);

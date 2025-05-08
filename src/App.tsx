@@ -19,6 +19,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AuthPage from "./pages/AuthPage";
 import { isSupabaseConfigured } from "./lib/supabaseClient";
 import { AuthProvider } from "./contexts/AuthContext";
+import ProfilePage from "./pages/ProfilePage";
 
 // Add console logging for debugging Supabase configuration
 console.log("Supabase Configuration Check:", {
@@ -82,40 +83,63 @@ const App = () => {
                       </ErrorBoundary>
                     } />
                     
+                    {/* Profile page */}
+                    <Route path="/profile" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <ProfilePage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    
                     {/* App routes */}
                     <Route path="/app" element={
                       <ErrorBoundary>
-                        <Index />
+                        <ProtectedRoute>
+                          <Index />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     } />
                     <Route path="/category/:category" element={
                       <ErrorBoundary>
-                        <Index />
+                        <ProtectedRoute>
+                          <Index />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     } />
                     <Route path="/note/:id" element={
                       <ErrorBoundary>
-                        <NotePage />
+                        <ProtectedRoute>
+                          <NotePage />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     } />
                     <Route path="/note/:id/explanation" element={
                       <ErrorBoundary>
-                        <ExplanationPage />
+                        <ProtectedRoute>
+                          <ExplanationPage />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     } />
                     <Route path="/focus" element={
                       <ErrorBoundary>
-                        <FocusMode />
+                        <ProtectedRoute>
+                          <FocusMode />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     } />
                     <Route path="/documents" element={
                       <ErrorBoundary>
-                        <DocumentsPage />
+                        <ProtectedRoute>
+                          <DocumentsPage />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     } />
                     <Route path="/exam-prep" element={
                       <ErrorBoundary>
-                        <ExamPrepPage />
+                        <ProtectedRoute>
+                          <ExamPrepPage />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     } />
                     <Route path="*" element={

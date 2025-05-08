@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth, useAuthWithToast } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,14 +12,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Settings, LogOut } from "lucide-react";
+import { User, Settings, LogOut, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function UserMenu() {
   const { user } = useAuth();
   const { signOut } = useAuthWithToast();
+  const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   // Get user initials for avatar fallback
   const getInitials = () => {
@@ -65,7 +67,16 @@ export function UserMenu() {
   
   const handleSignOut = async () => {
     if (signOut) {
-      await signOut();
+      setIsSigningOut(true);
+      try {
+        await signOut();
+        // Navigate to auth page after sign out
+        navigate('/auth');
+      } catch (error) {
+        console.error("Error during sign out:", error);
+      } finally {
+        setIsSigningOut(false);
+      }
     }
   };
 
@@ -102,9 +113,22 @@ export function UserMenu() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
-          <LogOut className="mr-2 h-4 w-4" />
-          Sign out
+        <DropdownMenuItem 
+          onClick={handleSignOut} 
+          className="cursor-pointer"
+          disabled={isSigningOut}
+        >
+          {isSigningOut ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Signing out...
+            </>
+          ) : (
+            <>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign out
+            </>
+          )}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
