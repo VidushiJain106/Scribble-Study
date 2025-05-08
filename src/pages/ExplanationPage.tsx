@@ -33,7 +33,7 @@ const ExplanationPage = () => {
     }
     
     fetchExplanation();
-  }, [noteId, note, navigate]);
+  }, [noteId, note, navigate, fetchExplanation]);
   
   const handleTakeQuiz = async () => {
     const quizData = await generateQuiz();
@@ -46,25 +46,27 @@ const ExplanationPage = () => {
     setShowQuiz(false);
   };
   
-  if (loading) {
-    return <ExplanationLoading isGeneratingQuiz={showQuiz && !quiz} />;
-  }
-  
-  if (!note || !explanation) {
-    return <ExplanationError />;
-  }
-  
-  return showQuiz && quiz ? (
-    <QuizContent 
-      quiz={quiz}
-      onComplete={handleCompleteQuiz} 
-      onBackToExplanation={() => setShowQuiz(false)}
-    />
-  ) : (
-    <ExplanationContent 
-      explanation={explanation} 
-      onTakeQuiz={handleTakeQuiz} 
-    />
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-accent/5">
+      {loading ? (
+        <ExplanationLoading isGeneratingQuiz={showQuiz && !quiz} />
+      ) : !note || !explanation ? (
+        <ExplanationError />
+      ) : (
+        showQuiz && quiz ? (
+          <QuizContent 
+            quiz={quiz}
+            onComplete={handleCompleteQuiz} 
+            onBackToExplanation={() => setShowQuiz(false)}
+          />
+        ) : (
+          <ExplanationContent 
+            explanation={explanation} 
+            onTakeQuiz={handleTakeQuiz} 
+          />
+        )
+      )}
+    </div>
   );
 };
 

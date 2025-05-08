@@ -1,7 +1,8 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Explanation } from "@/types";
-import { HelpCircle, Lightbulb, ArrowLeft } from "lucide-react";
+import { HelpCircle, Lightbulb, ArrowLeft, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -51,17 +52,18 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
   };
   
   return (
-    <div className="container max-w-4xl mx-auto py-6 px-4">
-      <div className="flex items-center justify-between mb-8">
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">{explanation.content.title}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{explanation.content.title}</h1>
           <p className="text-muted-foreground">Created from your notes on {explanation.topic}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <Button
             variant="outline"
             onClick={handleBackToNote}
             className="flex items-center gap-1"
+            size="sm"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Note
@@ -69,54 +71,64 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
           <Button
             onClick={onTakeQuiz}
             className="flex items-center gap-2"
+            size="sm"
           >
-            <HelpCircle className="h-5 w-5" />
+            <HelpCircle className="h-4 w-4" />
             Test Knowledge
           </Button>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-        <div className="md:col-span-1 space-y-3">
-          <h2 className="font-medium text-lg mb-3">Sections</h2>
-          {explanation.content.sections.map((section, idx) => (
-            <Button
-              key={idx}
-              variant={activeSection === idx ? "default" : "outline"}
-              className="w-full justify-start text-left h-auto py-2 font-normal"
-              onClick={() => setActiveSection(idx)}
-            >
-              {section.title}
-            </Button>
-          ))}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1 space-y-3">
+          <div className="sticky top-6">
+            <h2 className="font-medium text-lg mb-3 flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              Sections
+            </h2>
+            <div className="space-y-2 max-h-[calc(100vh-12rem)] overflow-y-auto pr-2">
+              {explanation.content.sections.map((section, idx) => (
+                <Button
+                  key={idx}
+                  variant={activeSection === idx ? "default" : "outline"}
+                  className={`w-full justify-start text-left h-auto py-3 px-4 font-normal ${
+                    activeSection === idx ? "border-l-4 border-primary" : ""
+                  }`}
+                  onClick={() => setActiveSection(idx)}
+                >
+                  <span className="line-clamp-2">{section.title}</span>
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
         
-        <div className="md:col-span-3">
+        <div className="lg:col-span-3">
           {activeSection !== null ? (
-            <Card className="p-6">
-              <h2 className="text-2xl font-medium mb-4">
+            <Card className="p-6 shadow-md">
+              <h2 className="text-2xl font-medium mb-4 text-primary">
                 {explanation.content.sections[activeSection].title}
               </h2>
-              <div className="prose max-w-none">
+              <div className="prose max-w-none dark:prose-invert">
                 {formatContent(explanation.content.sections[activeSection].content).map((paragraph, idx) => (
-                  <p key={idx} className="mb-4">{paragraph}</p>
+                  <p key={idx} className="mb-4 leading-relaxed">{paragraph}</p>
                 ))}
               </div>
             </Card>
           ) : (
             <>
-              <Card className="p-6 mb-6">
-                <div className="flex items-start gap-3">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <Lightbulb className="h-5 w-5 text-primary" />
+              <Card className="p-6 mb-6 shadow-md bg-gradient-to-br from-white to-accent/30 dark:from-card dark:to-accent/10">
+                <div className="flex items-start gap-4">
+                  <div className="bg-primary/15 p-3 rounded-full flex-shrink-0">
+                    <Lightbulb className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-medium mb-2">Overview</h2>
-                    <div className="prose max-w-none">
+                    <h2 className="text-xl font-medium mb-3">Overview</h2>
+                    <div className="prose max-w-none dark:prose-invert">
                       {explanation.content.sections[0] && formatContent(explanation.content.sections[0].content)
                         .slice(0, 2)
                         .map((paragraph, idx) => (
-                          <p key={idx} className="mb-4">{paragraph}</p>
+                          <p key={idx} className="mb-4 leading-relaxed">{paragraph}</p>
                         ))}
                     </div>
                     <Button
@@ -131,11 +143,18 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
                 </div>
               </Card>
               
-              <h2 className="text-xl font-medium mb-4">Key Sections</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <h2 className="text-xl font-medium mb-4 flex items-center gap-2 px-1">
+                <BookOpen className="h-5 w-5 text-primary" />
+                Key Sections
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 {explanation.content.sections.slice(1).map((section, idx) => (
-                  <Card key={idx} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveSection(idx + 1)}>
-                    <h3 className="font-medium mb-2">{section.title}</h3>
+                  <Card 
+                    key={idx} 
+                    className="p-5 hover:shadow-lg transition-all duration-300 cursor-pointer border-l-4 border-transparent hover:border-primary" 
+                    onClick={() => setActiveSection(idx + 1)}
+                  >
+                    <h3 className="font-medium text-lg mb-2">{section.title}</h3>
                     <p className="text-sm text-muted-foreground line-clamp-3">
                       {formatContent(section.content)[0]}
                     </p>
@@ -143,11 +162,11 @@ export function ExplanationContent({ explanation, onTakeQuiz }: ExplanationConte
                 ))}
               </div>
               
-              <Card className="p-6 mt-6">
+              <Card className="p-6 shadow-md border-t-4 border-primary">
                 <h2 className="text-xl font-medium mb-4">Summary</h2>
-                <div className="prose max-w-none">
+                <div className="prose max-w-none dark:prose-invert">
                   {formatContent(explanation.content.summary).map((paragraph, idx) => (
-                    <p key={idx} className="mb-4">{paragraph}</p>
+                    <p key={idx} className="mb-4 leading-relaxed">{paragraph}</p>
                   ))}
                 </div>
               </Card>
