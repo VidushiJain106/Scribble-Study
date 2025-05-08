@@ -1,4 +1,3 @@
-
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -154,12 +153,11 @@ export function Sidebar() {
           ) : (
             <Button
               variant="ghost"
-              size="sm"
-              className="justify-start w-full text-muted-foreground hover:text-foreground"
+              size="icon"
+              className="h-7 w-7 rounded-full ml-1 text-muted-foreground hover:text-foreground"
               onClick={() => setIsAddingCategory(true)}
             >
-              <Plus className="h-3.5 w-3.5 mr-2" />
-              Add Category
+              <Plus className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
