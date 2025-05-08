@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { Note, NoteCategory, NoteColor, Attachment, DrawPath } from '@/types';
@@ -244,12 +243,6 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
     try {
       set({ isLoading: true });
       
-      // Ensure attachment has a size property even if it's undefined
-      const attachmentWithSize = {
-        ...attachment,
-        size: attachment.size ?? 0, // Fixed: Use nullish coalescing to provide a default value
-      };
-      
       const attachmentId = uuidv4();
       const now = new Date();
       
@@ -259,10 +252,10 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
         .insert({
           id: attachmentId,
           note_id: noteId,
-          name: attachmentWithSize.name,
-          url: attachmentWithSize.url,
-          type: attachmentWithSize.type,
-          size: attachmentWithSize.size ?? 0,
+          name: attachment.name,
+          url: attachment.url,
+          type: attachment.type,
+          size: attachment.size ?? 0, // Use optional chaining with nullish coalescing
           created_at: now
         });
       
@@ -290,7 +283,7 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
         const updatedNote = { ...state.notes[noteIndex] } as any;
         const newAttachment: Attachment = {
           id: attachmentId,
-          ...attachmentWithSize,
+          ...attachment,
           createdAt: now
         } as any;
         
