@@ -19,7 +19,8 @@ export function useNoteSave(noteId: string) {
     try {
       await updateNote(noteId, {
         title,
-        content
+        content,
+        updated_at: new Date()
       });
       
       toast({
