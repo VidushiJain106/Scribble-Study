@@ -47,7 +47,7 @@ export function EditorColorMenu({ editor, isOpen, setIsOpen }: EditorColorMenuPr
   };
 
   const setHighlight = (color: string) => {
-    editor.chain().focus().toggleHighlight({ color }).run();
+    editor.chain().focus().setHighlight({ color }).run();
   };
 
   const removeColor = () => {
@@ -55,7 +55,7 @@ export function EditorColorMenu({ editor, isOpen, setIsOpen }: EditorColorMenuPr
   };
 
   const removeHighlight = () => {
-    editor.chain().focus().unsetHighlight().run();
+    editor.chain().focus().setHighlight(false).run();
   };
 
   return (

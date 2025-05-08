@@ -194,7 +194,7 @@ export function RichTextEditor({
   // Helper to handle image uploads
   const addImage = useCallback((url: string, alt: string = "") => {
     if (editor) {
-      editor.chain().focus().setImage({ src: url, alt }).run();
+      editor.chain().focus().insertImage({ src: url, alt }).run();
     }
   }, [editor]);
 
