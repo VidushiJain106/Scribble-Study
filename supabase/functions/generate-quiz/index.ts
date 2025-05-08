@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 
@@ -11,6 +10,8 @@ interface QuizRequest {
   noteId: string;
   topic: string;
   explanation: string;
+  difficulty?: string;
+  questionsCount?: number;
 }
 
 interface QuizQuestion {
@@ -25,6 +26,26 @@ interface QuizResponse {
   questions: QuizQuestion[];
   topic: string;
   introduction: string;
+}
+
+// In-memory cache for quiz results (in production, consider using a more robust caching solution)
+const quizCache = new Map<string, {data: QuizResponse, timestamp: number}>();
+const CACHE_TTL = 1000 * 60 * 60; // 1 hour cache duration
+
+// In-memory locks to prevent concurrent generation for the same explanation
+const generationLocks = new Map<string, number>();
+const LOCK_EXPIRY = 1000 * 60; // 1 minute lock expiry
+
+// Function to create a short hash of the explanation content
+function createExplanationHash(explanation: string): string {
+  // Simple hashing - in production, consider a more robust hashing function
+  let hash = 0;
+  for (let i = 0; i < explanation.length; i++) {
+    const char = explanation.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(16);
 }
 
 serve(async (req) => {
@@ -49,39 +70,18 @@ serve(async (req) => {
     const apiKey = Deno.env.get('OPENROUTER_API_KEY');
     
     if (!apiKey) {
-      console.error('OPENROUTER_API_KEY not configured');
-      // Return mock quiz data for testing
-      return new Response(JSON.stringify({
-        topic: "Carbon Dioxide and Climate Change",
-        introduction: "Test your knowledge about atmospheric carbon dioxide and its environmental impacts",
-        questions: [
-          {
-            id: "q1",
-            question: "What is the current atmospheric CO2 level in parts per million (ppm) as of 2023?",
-            difficulty: "easy",
-            hint: "It's over 400 ppm",
-            explanation: "According to recent measurements, global average atmospheric CO2 reached 419.3 ppm in 2023."
-          },
-          {
-            id: "q2",
-            question: "Explain how carbon dioxide contributes to the greenhouse effect",
-            difficulty: "moderate",
-            hint: "Think about how it interacts with heat radiation",
-            explanation: "Carbon dioxide absorbs and re-emits infrared radiation, trapping heat in Earth's atmosphere that would otherwise escape to space."
-          },
-          {
-            id: "q3",
-            question: "Analyze the potential consequences if atmospheric CO2 reaches 800 ppm by the end of the century",
-            difficulty: "hard",
-            hint: "Consider historical analogs from Earth's past",
-            explanation: "At 800 ppm, we would likely see temperature increases of 4-7°C, significant sea level rise, widespread ecosystem disruption, and conditions not seen on Earth for nearly 50 million years."
-          }
-        ]
-      }), {
+      return new Response(JSON.stringify({ error: 'API key not configured' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        status: 500,
       });
     }
+    
+    // Create Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
     
     // Parse request data
     const requestData = await req.json() as QuizRequest;
@@ -93,11 +93,92 @@ serve(async (req) => {
       });
     }
     
-    console.log(`Generating quiz for topic: ${requestData.topic}`);
-    console.log(`Using OPENROUTER_API_KEY: ${apiKey.substring(0, 5)}...`);
+    // Determine how many questions to generate
+    const questionsCount = requestData.questionsCount || 2; // Default to 2 questions for speed
+    
+    // Create an explanation hash to identify this specific explanation
+    const explanationHash = createExplanationHash(requestData.explanation);
+    
+    // Create a lock ID for this specific quiz generation request
+    const lockId = `${requestData.noteId}:${requestData.topic}:${explanationHash}`;
+    
+    // Check if a generation is already in progress for this explanation
+    const existingLock = generationLocks.get(lockId);
+    if (existingLock && (Date.now() - existingLock < LOCK_EXPIRY)) {
+      return new Response(JSON.stringify({ 
+        error: 'A quiz is already being generated for this explanation',
+        status: 'in_progress' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 429, // Too many requests
+      });
+    }
+    
+    // First, try to get the quiz from the database
+    // Only search for existing quizzes if we're not asking for a specific difficulty
+    if (!requestData.difficulty) {
+      const { data: existingQuiz, error } = await supabaseClient
+        .from('quizzes')
+        .select('*')
+        .eq('note_id', requestData.noteId)
+        .eq('topic', requestData.topic)
+        .eq('explanation_hash', explanationHash)
+        .single();
+      
+      if (existingQuiz && !error) {
+        console.log('Found existing quiz in database for specific explanation');
+        const formattedQuiz = {
+          questions: existingQuiz.questions,
+          topic: existingQuiz.topic,
+          introduction: existingQuiz.introduction
+        };
+        
+        return new Response(JSON.stringify(formattedQuiz), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+    }
+    
+    // Try the cache next
+    const cacheKey = `${requestData.noteId}:${requestData.topic}:${explanationHash}:${requestData.difficulty || 'default'}`;
+    const cachedQuiz = quizCache.get(cacheKey);
+    
+    // Return cached result if available and not expired
+    if (cachedQuiz && (Date.now() - cachedQuiz.timestamp < CACHE_TTL)) {
+      console.log(`Returning cached quiz for ${requestData.topic} with specific explanation`);
+      return new Response(JSON.stringify(cachedQuiz.data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+    
+    // No existing quiz found in DB or cache, acquire a lock for generation
+    generationLocks.set(lockId, Date.now());
     
     try {
-      // Call OpenRouter API
+      console.log(`Generating quiz for topic: ${requestData.topic}, questions: ${questionsCount}`);
+      
+      // Generate a simplified prompt based on the difficulty
+      let difficultyPrompt = '';
+      if (requestData.difficulty && requestData.difficulty !== 'mixed') {
+        difficultyPrompt = `All questions should be ${requestData.difficulty} difficulty.`;
+      }
+      
+      // Check if we're using raw note content rather than a structured explanation
+      const isRawNoteContent = typeof requestData.explanation === 'string' && 
+        !requestData.explanation.includes('"sections"') && 
+        !requestData.explanation.includes('"title"');
+      
+      // Prepare a context-appropriate prompt
+      let contextPrompt = '';
+      if (isRawNoteContent) {
+        contextPrompt = `Create quiz questions directly from this note content: ${requestData.explanation.substring(0, 500)}...`;
+      } else {
+        contextPrompt = `Create quiz questions on: ${requestData.topic}.\n\nContext: ${requestData.explanation.substring(0, 500)}...`;
+      }
+      
+      // Call OpenRouter API with a simpler, more focused prompt
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -107,39 +188,38 @@ serve(async (req) => {
           'X-Title': 'ScribbleSnap Quiz Generation'
         },
         body: JSON.stringify({
-          model: 'openai/gpt-3.5-turbo',
+          model: 'mistralai/mistral-7b-instruct', // Ultra-fast model option
           messages: [
             {
               role: 'system', 
-              content: `You are an educational assessment expert creating quiz questions on academic topics. Create three questions of increasing difficulty to test understanding.
+              content: `Create ${questionsCount} quiz questions based on the provided content. ${difficultyPrompt}
               
-              Return your response as a JSON object with:
-              - "topic": The main topic being tested
-              - "introduction": A brief introduction to the quiz
-              - "questions": An array of 3 questions with fields:
-                - "id": A unique identifier (string)
-                - "question": The question text (should be open-ended, not multiple choice)
-                - "difficulty": One of: "easy", "moderate", "hard" (one of each)
-                - "hint": A helpful hint if the student gets stuck (optional)
-                - "explanation": A brief explanation of what a good answer would include`
+              Be concise and direct. Return only a JSON object in this exact format:
+              {
+                "topic": "Topic name",
+                "introduction": "Brief 1-sentence intro",
+                "questions": [
+                  {
+                    "id": "unique-id-1",
+                    "question": "Question text?",
+                    "difficulty": "easy", 
+                    "hint": "Short hint",
+                    "explanation": "Brief explanation"
+                  }
+                ]
+              }`
             },
             {
               role: 'user',
-              content: `Create quiz questions for the topic: ${requestData.topic}
-              
-              This explanation has been provided to students:
-              "${requestData.explanation}"`
+              content: contextPrompt
             }
           ],
-          response_format: { type: 'json_object' }
+          response_format: { type: 'json_object' },
+          temperature: 0.5, // Lower temperature for faster, more deterministic results
+          max_tokens: 500,  // Reduced response size limit
+          timeout: 15       // Add timeout limit in seconds
         }),
       });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('OpenRouter API error response:', response.status, errorText);
-        throw new Error(`OpenRouter API error: ${response.status} ${errorText}`);
-      }
       
       const result = await response.json();
       let quiz: QuizResponse;
@@ -155,99 +235,55 @@ serve(async (req) => {
       try {
         // Parse the LLM response
         const content = result.choices[0].message.content;
-        console.log("Raw quiz response:", content.substring(0, 100) + "...");
+        quiz = JSON.parse(content);
         
-        try {
-          quiz = JSON.parse(content);
-        } catch (parseError) {
-          console.error('Error parsing JSON from LLM:', parseError);
-          
-          // Fallback with mock data if parsing fails
-          quiz = {
-            topic: requestData.topic,
-            introduction: "Test your knowledge on " + requestData.topic,
-            questions: [
-              {
-                id: "q1",
-                question: "What is the main topic discussed in the explanation?",
-                difficulty: "easy",
-                hint: "It's the central subject of the material",
-                explanation: "The main topic is " + requestData.topic
-              },
-              {
-                id: "q2",
-                question: "Explain one key concept from the explanation",
-                difficulty: "moderate",
-                explanation: "A good answer would identify and explain any main concept from the explanation."
-              },
-              {
-                id: "q3",
-                question: "How does this topic relate to broader environmental or scientific issues?",
-                difficulty: "hard",
-                explanation: "This requires connecting the topic to wider scientific or environmental contexts."
-              }
-            ]
-          };
-        }
-        
-        console.log('Successfully generated quiz');
-        
-        return new Response(JSON.stringify(quiz), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
+        // Add to cache
+        quizCache.set(cacheKey, {
+          data: quiz,
+          timestamp: Date.now()
         });
+        
+        // Only store in Supabase if it's a standard quiz (not a specific difficulty request)
+        if (!requestData.difficulty) {
+          // Store the quiz in Supabase
+          const { data, error } = await supabaseClient
+            .from('quizzes')
+            .upsert({
+              note_id: requestData.noteId,
+              topic: requestData.topic,
+              questions: quiz.questions,
+              introduction: quiz.introduction,
+              explanation_hash: explanationHash,
+              created_at: new Date().toISOString()
+            })
+            .select();
+          
+          if (error) {
+            console.error('Error storing quiz:', error);
+          }
+        }
       } catch (e) {
-        console.error('Error processing quiz response:', e);
-        return new Response(JSON.stringify({ 
-          error: 'Error processing quiz response',
-          topic: requestData.topic,
-          introduction: "There was an error generating your quiz.",
-          questions: [
-            {
-              id: "error1",
-              question: "Error generating questions. Please try again later.",
-              difficulty: "moderate"
-            }
-          ]
-        }), {
+        console.error('Error parsing LLM response:', e);
+        return new Response(JSON.stringify({ error: 'Error processing quiz response' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200, // Return 200 with error message in content
+          status: 500,
         });
       }
-    } catch (fetchError) {
-      console.error('Fetch error:', fetchError);
-      return new Response(JSON.stringify({
-        error: `Error calling OpenRouter: ${fetchError.message}`,
-        topic: requestData.topic,
-        introduction: "Unable to generate quiz at this time.",
-        questions: [
-          {
-            id: "error1",
-            question: "Connection error. Please try again later.",
-            difficulty: "moderate"
-          }
-        ]
-      }), {
+      
+      return new Response(JSON.stringify(quiz), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200, // Return 200 with error info
+        status: 200,
       });
+    } finally {
+      // Release the lock when done (whether successful or not)
+      generationLocks.delete(lockId);
     }
+    
   } catch (error) {
     console.error('Unexpected error:', error);
-    return new Response(JSON.stringify({
-      error: 'An unexpected error occurred',
-      topic: "Error",
-      introduction: "An error occurred while generating your quiz.",
-      questions: [
-        {
-          id: "error1",
-          question: "System error. Please try again later.",
-          difficulty: "moderate"
-        }
-      ]
-    }), {
+    return new Response(JSON.stringify({ error: 'An unexpected error occurred' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200, // Return 200 with error info
+      status: 500,
     });
   }
 });

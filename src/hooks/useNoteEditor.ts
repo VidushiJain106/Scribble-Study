@@ -8,8 +8,8 @@ import { useNoteSave } from "./useNoteSave";
 import { useNoteAttachments } from "./useNoteAttachments";
 
 export function useNoteEditor(noteId: string) {
-  const isLoading = useNoteStore(state => state.isLoading);
   const { user } = useAuth();
+  const isLoading = useNoteStore(state => state.isLoading);
   
   const [activeTab, setActiveTab] = useState("text");
   const navigate = useNavigate();

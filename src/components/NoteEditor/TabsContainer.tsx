@@ -1,6 +1,5 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Pen, Loader2 } from "lucide-react";
+import { FileText, Pen } from "lucide-react";
 import { CSSProperties, ReactNode } from "react";
 
 interface TabsContainerProps {
@@ -8,15 +7,13 @@ interface TabsContainerProps {
   setActiveTab: (tab: string) => void;
   textContent: ReactNode;
   drawContent: ReactNode;
-  isLoading?: boolean;
 }
 
 export function TabsContainer({ 
   activeTab, 
   setActiveTab, 
   textContent, 
-  drawContent,
-  isLoading = false
+  drawContent
 }: TabsContainerProps) {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full overflow-hidden">
@@ -33,24 +30,13 @@ export function TabsContainer({
         </TabsList>
       </div>
       
-      {isLoading ? (
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading note...</p>
-          </div>
-        </div>
-      ) : (
-        <>
-          <TabsContent value="text" className="flex-1 flex flex-col p-4 pt-0 overflow-hidden">
-            {textContent}
-          </TabsContent>
-          
-          <TabsContent value="draw" className="flex-1 p-0 overflow-hidden">
-            {drawContent}
-          </TabsContent>
-        </>
-      )}
+      <TabsContent value="text" className="flex-1 flex flex-col p-4 pt-0 overflow-hidden">
+        {textContent}
+      </TabsContent>
+      
+      <TabsContent value="draw" className="flex-1 p-0 overflow-hidden">
+        {drawContent}
+      </TabsContent>
     </Tabs>
   );
 }

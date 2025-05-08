@@ -265,5 +265,152 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } finally {
       setLoading(false);
     }
+  },
+
+  summarizeSnippet: async (snippet: string): Promise<string> => {
+    const { addMessage, setLoading } = get();
+    if (!snippet.trim()) return "";
+
+    setLoading(true);
+    addMessage(`Summarizing: "${snippet.slice(0,30)}..."`, "assistant");
+
+    try {
+      const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
+      let summary = "";
+
+      if (OPENAI_KEY) {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${OPENAI_KEY}`
+          },
+          body: JSON.stringify({
+            model: "gpt-3.5-turbo",
+            messages: [
+              { role: "system", content: "You are a summarization assistant. Create very concise summaries that capture the key points in 1-2 sentences." },
+              { role: "user", content: `Summarize this text in 1-2 sentences:\n\n${snippet}` }
+            ],
+            max_tokens: 100,
+            temperature: 0.5
+          })
+        });
+
+        const json = await res.json();
+        summary = json?.choices?.[0]?.message?.content?.trim() || "";
+      }
+
+      if (!summary) {
+        summary = `This is a simulated summary of the highlighted text. In production, this would condense the main points of the snippet.`;
+      }
+
+      addMessage(summary, "assistant");
+      return summary;
+    } catch (err) {
+      console.error("summarizeSnippet error", err);
+      const fallback = `Sorry, I couldn't generate a summary right now.`;
+      addMessage(fallback, "assistant");
+      return fallback;
+    } finally {
+      setLoading(false);
+    }
+  },
+
+  simplifySnippet: async (snippet: string): Promise<string> => {
+    const { addMessage, setLoading } = get();
+    if (!snippet.trim()) return "";
+
+    setLoading(true);
+    addMessage(`Simplifying: "${snippet.slice(0,30)}..."`, "assistant");
+
+    try {
+      const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
+      let simplified = "";
+
+      if (OPENAI_KEY) {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${OPENAI_KEY}`
+          },
+          body: JSON.stringify({
+            model: "gpt-3.5-turbo",
+            messages: [
+              { role: "system", content: "You are a simplification expert. Your job is to take complex text and rewrite it using simpler vocabulary and shorter sentences. Aim for elementary school reading level (grade 3-4)." },
+              { role: "user", content: `Rewrite this text in the simplest language possible, as if for a young child:\n\n${snippet}` }
+            ],
+            max_tokens: 150,
+            temperature: 0.7
+          })
+        });
+
+        const json = await res.json();
+        simplified = json?.choices?.[0]?.message?.content?.trim() || "";
+      }
+
+      if (!simplified) {
+        simplified = `This is a simulated simplified version of the text. It would use basic words and short sentences to make complex ideas easier to understand.`;
+      }
+
+      addMessage(simplified, "assistant");
+      return simplified;
+    } catch (err) {
+      console.error("simplifySnippet error", err);
+      const fallback = `Sorry, I couldn't simplify this text right now.`;
+      addMessage(fallback, "assistant");
+      return fallback;
+    } finally {
+      setLoading(false);
+    }
+  },
+
+  generateExamples: async (snippet: string): Promise<string> => {
+    const { addMessage, setLoading } = get();
+    if (!snippet.trim()) return "";
+
+    setLoading(true);
+    addMessage(`Generating examples for: "${snippet.slice(0,30)}..."`, "assistant");
+
+    try {
+      const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
+      let examples = "";
+
+      if (OPENAI_KEY) {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${OPENAI_KEY}`
+          },
+          body: JSON.stringify({
+            model: "gpt-3.5-turbo",
+            messages: [
+              { role: "system", content: "You are an educational assistant. Your job is to generate 2-3 clear, concrete examples that illustrate the concept or topic provided. Make examples relatable and easy to understand." },
+              { role: "user", content: `Generate 2-3 practical examples to illustrate this concept or topic:\n\n${snippet}` }
+            ],
+            max_tokens: 200,
+            temperature: 0.7
+          })
+        });
+
+        const json = await res.json();
+        examples = json?.choices?.[0]?.message?.content?.trim() || "";
+      }
+
+      if (!examples) {
+        examples = `Here are some examples that would illustrate this concept:\n\n1. [First example would appear here]\n\n2. [Second example would appear here]\n\n3. [Third example might appear here]`;
+      }
+
+      addMessage(examples, "assistant");
+      return examples;
+    } catch (err) {
+      console.error("generateExamples error", err);
+      const fallback = `Sorry, I couldn't generate examples right now.`;
+      addMessage(fallback, "assistant");
+      return fallback;
+    } finally {
+      setLoading(false);
+    }
   }
 }));

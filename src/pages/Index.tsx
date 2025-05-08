@@ -1,9 +1,8 @@
-
 import { NoteList } from "@/components/Dashboard/NoteList";
 import { Sidebar } from "@/components/Dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
-import { useNoteStore, useInitializeNotes } from "@/lib/store";
+import { useNoteStore } from "@/lib/store";
 import { useCategoryStore } from "@/lib/categoryStore";
 import { NoteCategory } from "@/types";
 import { FileText, Menu, PenLine, Plus, Loader2 } from "lucide-react";
@@ -37,8 +36,13 @@ const Index = () => {
   const { category } = useParams<{ category?: string }>();
   const { user, loading: authLoading } = useAuth();
   
-  // Initialize notes when authenticated
-  useInitializeNotes();
+  // Initialize notes when component mounts and user is authenticated
+  useEffect(() => {
+    if (user) {
+      console.log("User authenticated, initializing notes");
+      // Any initialization logic can go here
+    }
+  }, [user]);
   
   // Redirect to login if not authenticated
   if (!authLoading && !user) {

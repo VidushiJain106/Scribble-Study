@@ -1,31 +1,97 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Quiz, QuizAnswer, QuizQuestion } from "@/types";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle, ChevronDown, ChevronUp, HelpCircle, Lightbulb } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle, ChevronDown, ChevronUp, HelpCircle, Lightbulb, Plus, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { withSupabase, getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface QuizContentProps {
   quiz: Quiz;
   onComplete: () => void;
   onBackToExplanation: () => void;
+  onGenerateMoreQuestions?: (difficulty?: string) => Promise<void>;
+  onSaveQuiz?: () => void;
 }
 
-export function QuizContent({ quiz, onComplete, onBackToExplanation }: QuizContentProps) {
+export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateMoreQuestions, onSaveQuiz }: QuizContentProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, QuizAnswer>>({});
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
+  const [isGeneratingMore, setIsGeneratingMore] = useState(false);
+  const [questionCount, setQuestionCount] = useState(quiz?.questions?.length || 0);
   const { toast } = useToast();
   
+  // Track when the quiz questions change
+  useEffect(() => {
+    if (quiz?.questions?.length !== questionCount) {
+      console.log("Quiz questions changed:", {
+        previous: questionCount,
+        current: quiz?.questions?.length
+      });
+      
+      setQuestionCount(quiz?.questions?.length || 0);
+      
+      // If new questions were added and we have more than before
+      if (quiz?.questions?.length > questionCount) {
+        // Optionally navigate to the first new question
+        setCurrentQuestionIndex(questionCount);
+        
+        toast({
+          title: "New questions added",
+          description: `${quiz.questions.length - questionCount} new questions have been added to the quiz.`,
+        });
+      }
+    }
+  }, [quiz?.questions]);
+  
+  // Update currentQuestionIndex if questionId no longer exists (after quiz refresh)
+  useEffect(() => {
+    if (quiz && quiz.questions.length > 0) {
+      // Ensure the current question index is not out of bounds
+      if (currentQuestionIndex >= quiz.questions.length) {
+        setCurrentQuestionIndex(quiz.questions.length - 1);
+      }
+    }
+  }, [quiz, currentQuestionIndex]);
+  
+  // Handle case where the quiz might be null or have no questions
+  if (!quiz || quiz.questions.length === 0) {
+    return (
+      <div className="container max-w-3xl mx-auto py-6 px-4">
+        <Button
+          variant="ghost"
+          className="mb-6 flex items-center gap-1"
+          onClick={onBackToExplanation}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to explanation
+        </Button>
+        <Card className="p-6">
+          <h2 className="text-xl font-medium mb-4">No questions available</h2>
+          <p className="text-muted-foreground">Please generate some quiz questions to test your knowledge.</p>
+        </Card>
+      </div>
+    );
+  }
+  
   const currentQuestion = quiz.questions[currentQuestionIndex];
-  const currentAnswer = answers[currentQuestion.id];
+  const currentAnswer = currentQuestion ? answers[currentQuestion.id] : undefined;
   const isLastQuestion = currentQuestionIndex === quiz.questions.length - 1;
-  const hasAnsweredAll = Object.keys(answers).length === quiz.questions.length;
-  const allCorrect = hasAnsweredAll && Object.values(answers).every(answer => answer.isCorrect);
+  
+  // Calculate if user has answered all questions correctly
+  const questionsAnswered = Object.keys(answers).length;
+  const correctAnswers = Object.values(answers).filter(answer => answer.isCorrect).length;
+  const hasAnsweredAll = questionsAnswered === quiz.questions.length;
+  const allCorrect = hasAnsweredAll && questionsAnswered === correctAnswers;
   
   const handleShowHint = () => {
     if (currentQuestion.hint) {
@@ -37,6 +103,8 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation }: QuizConte
   };
   
   const handleAnswerChange = (value: string) => {
+    if (!currentQuestion) return;
+    
     setAnswers(prev => ({
       ...prev,
       [currentQuestion.id]: {
@@ -48,6 +116,8 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation }: QuizConte
   };
   
   const handleSubmitAnswer = async () => {
+    if (!currentQuestion) return;
+    
     const answer = answers[currentQuestion.id];
     
     if (!answer || !answer.answer.trim()) {
@@ -146,6 +216,28 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation }: QuizConte
       default: return "text-foreground";
     }
   };
+
+  const handleGenerateMoreQuestions = async (difficulty?: string) => {
+    if (!onGenerateMoreQuestions) return;
+    
+    setIsGeneratingMore(true);
+    try {
+      console.log("Requesting more questions with difficulty:", difficulty);
+      await onGenerateMoreQuestions(difficulty);
+    } catch (error) {
+      console.error("Error generating more questions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate more questions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingMore(false);
+    }
+  };
+  
+  // Ensure we have valid data before rendering
+  if (!currentQuestion) return null;
   
   return (
     <div className="container max-w-3xl mx-auto py-6 px-4">
@@ -158,21 +250,73 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation }: QuizConte
         Back to explanation
       </Button>
       
-      <h1 className="text-3xl font-bold mb-4">Test Your Knowledge</h1>
-      <p className="text-muted-foreground mb-8">{quiz.introduction}</p>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-3xl font-bold">Test Your Knowledge</h1>
+        <div className="flex gap-2">
+          {onSaveQuiz && (
+            <Button
+              variant="secondary"
+              className="flex items-center gap-2"
+              onClick={onSaveQuiz}
+            >
+              <Save className="h-4 w-4" />
+              Save Quiz
+            </Button>
+          )}
+          {onGenerateMoreQuestions && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2"
+                  disabled={isGeneratingMore}
+                >
+                  <Plus className="h-4 w-4" />
+                  {isGeneratingMore ? "Generating..." : "More Questions"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("mixed")}>
+                  <span className="font-medium">Mixed Difficulty</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("easy")}>
+                  <span className="text-green-500 font-medium">Easy</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("moderate")}>
+                  <span className="text-yellow-500 font-medium">Moderate</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("hard")}>
+                  <span className="text-red-500 font-medium">Hard</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </div>
       
-      <div className="flex gap-4 mb-6">
+      <p className="text-muted-foreground mb-6">{quiz.introduction}</p>
+      
+      <div className="flex flex-wrap gap-2 mb-6">
         {quiz.questions.map((q, idx) => (
           <Button
             key={q.id}
             variant={currentQuestionIndex === idx ? "default" : "outline"}
-            className={`flex-1 ${answers[q.id]?.isCorrect === true ? "border-green-500" : ""}`}
+            className={`${answers[q.id]?.isCorrect === true ? "border-green-500" : ""} ${idx >= questionCount - (quiz.questions.length - questionCount) && idx < quiz.questions.length ? "bg-opacity-80 border-blue-400" : ""}`}
             onClick={() => setCurrentQuestionIndex(idx)}
           >
             Q{idx + 1}
-            {answers[q.id]?.isCorrect === true && <CheckCircle className="ml-2 h-4 w-4 text-green-500" />}
+            {answers[q.id]?.isCorrect === true && <CheckCircle className="ml-1 h-4 w-4 text-green-500" />}
           </Button>
         ))}
+      </div>
+
+      <div className="flex justify-between items-center mb-2">
+        <div className="text-sm text-muted-foreground">
+          {correctAnswers} of {quiz.questions.length} questions answered correctly
+        </div>
+        <div className="text-sm font-medium">
+          Question {currentQuestionIndex + 1} of {quiz.questions.length}
+        </div>
       </div>
       
       <Card className="p-6 mb-6">
@@ -251,15 +395,43 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation }: QuizConte
             <div>
               <h2 className="text-lg font-medium mb-1 text-green-800">Congratulations!</h2>
               <p className="text-green-700">
-                You've correctly answered all questions. You have a solid understanding of this topic.
+                You've correctly answered all {quiz.questions.length} questions. You have a solid understanding of this topic.
               </p>
+              <div className="flex gap-3 mt-4">
               <Button
                 variant="outline"
-                className="mt-4"
                 onClick={onComplete}
               >
                 Continue Learning
               </Button>
+                {onGenerateMoreQuestions && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        disabled={isGeneratingMore}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        {isGeneratingMore ? "Generating..." : "Generate More Questions"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("mixed")}>
+                        <span className="font-medium">Mixed Difficulty</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("easy")}>
+                        <span className="text-green-500 font-medium">Easy</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("moderate")}>
+                        <span className="text-yellow-500 font-medium">Moderate</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleGenerateMoreQuestions("hard")}>
+                        <span className="text-red-500 font-medium">Hard</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
             </div>
           </div>
         </Card>

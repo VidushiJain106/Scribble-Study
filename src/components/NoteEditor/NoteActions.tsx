@@ -1,20 +1,21 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Lightbulb, Save, Trash, Loader2 } from "lucide-react";
+import { GraduationCap, Lightbulb, Save, Trash, BookOpen, BrainCircuit } from "lucide-react";
 import { FC } from "react";
 import { FileUploader } from "./FileUploader";
 import { Note } from "@/types";
 import { useNavigate } from "react-router-dom";
+import { withSupabase } from "@/lib/supabaseClient";
+import { useToast } from "@/hooks/use-toast";
+import { useNoteStore } from "@/lib/store";
 
 interface NoteActionsProps {
   noteId: string;
   title: string;
   setTitle: (title: string) => void;
-  note: Note | null;
-  content: string; // Add content to props
+  note: Note;
   isAnalyzing: boolean;
-  isSaving?: boolean;
-  handleSave: (title: string, content: string) => Promise<void>;
+  handleSave: () => void;
   deleteNote: (id: string) => void;
   handleFileUpload: (attachment: any) => void;
   handlePdfTextExtracted?: (text: string) => void;
@@ -27,9 +28,7 @@ export const NoteActions: FC<NoteActionsProps> = ({
   title,
   setTitle,
   note,
-  content, // Add content to the destructured props
   isAnalyzing,
-  isSaving = false,
   handleSave,
   deleteNote,
   handleFileUpload,
@@ -38,12 +37,87 @@ export const NoteActions: FC<NoteActionsProps> = ({
   forceAnalysis
 }) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const saveQuizToNote = useNoteStore(state => state.saveQuizToNote);
   
   // Check if the note has analysis data and is ready for explanation
-  const showExplainButton = note && note.analysis && note.analysis.readyForExplanation;
+  const showExplainButton = note.analysis && note.analysis.readyForExplanation;
   
   // Also check if we have enough content but no analysis yet
-  const showAnalyzeButton = note && content && content.length > 50 && (!note.analysis || !note.analysis.readyForExplanation);
+  const showAnalyzeButton = note.content && note.content.length > 50 && (!note.analysis || !note.analysis.readyForExplanation);
+
+  // Check if the note has saved resources
+  const hasSavedResources = 
+    (note.savedExplanations && note.savedExplanations.length > 0) || 
+    (note.savedQuizzes && note.savedQuizzes.length > 0);
+    
+  // Function to generate quiz directly from note content
+  const handleGenerateQuiz = async () => {
+    if (!note || !note.content || note.content.length < 30) {
+      toast({
+        title: "Not enough content",
+        description: "Add more content to your note to generate a quiz.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    toast({
+      title: "Generating quiz",
+      description: "Please wait while we create questions based on your note.",
+    });
+    
+    try {
+      const topic = note.title || "Note Content";
+      const noteContent = note.content;
+      
+      const quiz = await withSupabase(
+        async (supabase) => {
+          const { data, error } = await supabase.functions.invoke('generate-quiz', {
+            body: {
+              noteId,
+              topic,
+              explanation: noteContent, // Use note content directly instead of explanation
+            },
+          });
+          
+          if (error) {
+            throw new Error(error.message);
+          }
+          
+          return {
+            id: `quiz-${Date.now()}`,
+            noteId,
+            topic,
+            introduction: data.introduction,
+            questions: data.questions,
+            createdAt: new Date()
+          };
+        },
+        null
+      );
+      
+      if (quiz) {
+        // Save the quiz to the note's savedQuizzes
+        saveQuizToNote(noteId, quiz);
+        
+        toast({
+          title: "Quiz generated",
+          description: "Quiz has been saved to your resources.",
+        });
+        
+        // Navigate to resources page to view the quiz
+        navigate(`/note/${noteId}/resources`);
+      }
+    } catch (error) {
+      console.error("Error generating quiz:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate quiz. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <>
@@ -81,6 +155,30 @@ export const NoteActions: FC<NoteActionsProps> = ({
             onPdfTextExtracted={handlePdfTextExtracted}
           />
           
+          {/* Generate Quiz button */}
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="rounded-full" 
+            onClick={handleGenerateQuiz} 
+            aria-label="Generate quiz from note"
+            title="Generate quiz questions from note content"
+          >
+            <BrainCircuit className="h-4 w-4" />
+          </Button>
+          
+          {/* Resources button to navigate to resources page */}
+          <Button 
+            variant={hasSavedResources ? "default" : "outline"} 
+            size="icon" 
+            className={`rounded-full ${hasSavedResources ? 'bg-secondary text-secondary-foreground' : ''}`}
+            onClick={() => navigate(`/note/${noteId}/resources`)} 
+            aria-label="View saved resources"
+            title="View saved explanations and quizzes"
+          >
+            <BookOpen className="h-4 w-4" />
+          </Button>
+          
           {/* Permanent Explain button that is highlighted when ready */}
           <Button 
             variant={showExplainButton ? "default" : "outline"} 
@@ -89,7 +187,6 @@ export const NoteActions: FC<NoteActionsProps> = ({
             onClick={handleExplainClick} 
             aria-label="Explain note"
             title={showExplainButton ? "Explanation ready!" : "Not enough content for explanation"}
-            disabled={!note}
           >
             <Lightbulb className="h-4 w-4" />
           </Button>
@@ -98,11 +195,10 @@ export const NoteActions: FC<NoteActionsProps> = ({
             variant="outline" 
             size="icon" 
             className="rounded-full" 
-            onClick={() => handleSave(title, content)} 
+            onClick={handleSave} 
             aria-label="Save note"
-            disabled={isSaving || !note}
           >
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            <Save className="h-4 w-4" />
           </Button>
           
           <Button 
@@ -111,12 +207,13 @@ export const NoteActions: FC<NoteActionsProps> = ({
             className="rounded-full text-destructive hover:text-destructive" 
             onClick={() => deleteNote(noteId)} 
             aria-label="Delete note"
-            disabled={!note}
           >
             <Trash className="h-4 w-4" />
           </Button>
         </div>
       </div>
+      
+      {/* Remove the prominent explain button section since we now have a permanent button in the header */}
     </>
   );
 };
