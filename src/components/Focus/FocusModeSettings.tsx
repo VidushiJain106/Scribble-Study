@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useFocusStore } from '@/lib/focusStore';
 import { Button } from '@/components/ui/button';
@@ -38,32 +39,31 @@ export const FocusModeSettings: React.FC<FocusModeSettingsProps> = ({ id, onClos
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="bg-slate-900 text-slate-200">
-      <DialogHeader className="border-b border-slate-700 pb-4">
-        <DialogTitle className="text-white">Focus Mode Settings</DialogTitle>
+    <form onSubmit={handleSubmit}>
+      <DialogHeader>
+        <DialogTitle>Focus Mode Settings</DialogTitle>
       </DialogHeader>
       
       <div className="py-4 space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="name" className="text-slate-300">Focus Mode Name</Label>
+          <Label htmlFor="name">Focus Mode Name</Label>
           <Input
             id="name"
             value={focusMode.name}
             onChange={(e) => handleInputChange('name', e.target.value)}
             placeholder="Enter a name for this focus mode"
-            className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
           />
         </div>
         
         <div className="space-y-2">
-          <Label className="text-slate-300">Focus Color</Label>
+          <Label>Focus Color</Label>
           <div className="flex gap-2">
             {colorOptions.map((color) => (
               <button
                 key={color}
                 type="button"
                 className={`w-8 h-8 rounded-full ${
-                  focusMode.color === color ? 'ring-2 ring-offset-2 ring-indigo-500 ring-offset-slate-900' : ''
+                  focusMode.color === color ? 'ring-2 ring-offset-2 ring-primary' : ''
                 }`}
                 style={{ backgroundColor: color }}
                 onClick={() => handleInputChange('color', color)}
@@ -75,8 +75,8 @@ export const FocusModeSettings: React.FC<FocusModeSettingsProps> = ({ id, onClos
         <div className="space-y-4 pt-2">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <BellOff className="h-4 w-4 text-indigo-400" />
-              <Label htmlFor="muteNotifications" className="cursor-pointer text-slate-300">
+              <BellOff className="h-4 w-4" />
+              <Label htmlFor="muteNotifications" className="cursor-pointer">
                 Mute Notifications
               </Label>
             </div>
@@ -84,14 +84,13 @@ export const FocusModeSettings: React.FC<FocusModeSettingsProps> = ({ id, onClos
               id="muteNotifications"
               checked={focusMode.muteNotifications}
               onCheckedChange={(checked) => handleInputChange('muteNotifications', checked)}
-              className="data-[state=checked]:bg-indigo-600"
             />
           </div>
           
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <MicOff className="h-4 w-4 text-blue-400" />
-              <Label htmlFor="muteCalls" className="cursor-pointer text-slate-300">
+              <MicOff className="h-4 w-4" />
+              <Label htmlFor="muteCalls" className="cursor-pointer">
                 Mute Calls
               </Label>
             </div>
@@ -99,14 +98,13 @@ export const FocusModeSettings: React.FC<FocusModeSettingsProps> = ({ id, onClos
               id="muteCalls"
               checked={focusMode.muteCalls}
               onCheckedChange={(checked) => handleInputChange('muteCalls', checked)}
-              className="data-[state=checked]:bg-blue-600"
             />
           </div>
           
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <TimerOff className="h-4 w-4 text-violet-400" />
-              <Label htmlFor="blockEntertainmentApps" className="cursor-pointer text-slate-300">
+              <TimerOff className="h-4 w-4" />
+              <Label htmlFor="blockEntertainmentApps" className="cursor-pointer">
                 Block Entertainment Apps
               </Label>
             </div>
@@ -114,14 +112,13 @@ export const FocusModeSettings: React.FC<FocusModeSettingsProps> = ({ id, onClos
               id="blockEntertainmentApps"
               checked={focusMode.blockEntertainmentApps}
               onCheckedChange={(checked) => handleInputChange('blockEntertainmentApps', checked)}
-              className="data-[state=checked]:bg-violet-600"
             />
           </div>
           
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-slate-400" />
-              <Label htmlFor="blockAllApps" className="cursor-pointer text-slate-300">
+              <Clock className="h-4 w-4" />
+              <Label htmlFor="blockAllApps" className="cursor-pointer">
                 Block All Apps
               </Label>
             </div>
@@ -129,14 +126,13 @@ export const FocusModeSettings: React.FC<FocusModeSettingsProps> = ({ id, onClos
               id="blockAllApps"
               checked={focusMode.blockAllApps}
               onCheckedChange={(checked) => handleInputChange('blockAllApps', checked)}
-              className="data-[state=checked]:bg-slate-600"
             />
           </div>
         </div>
         
         <div className="space-y-2 pt-2">
           <div className="flex justify-between items-center">
-            <Label htmlFor="duration" className="text-slate-300">Duration: {focusMode.duration} minutes</Label>
+            <Label htmlFor="duration">Duration: {focusMode.duration} minutes</Label>
           </div>
           <Slider
             id="duration"
@@ -145,20 +141,19 @@ export const FocusModeSettings: React.FC<FocusModeSettingsProps> = ({ id, onClos
             step={5}
             value={[focusMode.duration]}
             onValueChange={(value) => handleInputChange('duration', value[0])}
-            className="[&_[role=slider]]:bg-indigo-500"
           />
-          <div className="flex justify-between text-xs text-slate-500 pt-1">
+          <div className="flex justify-between text-xs text-muted-foreground pt-1">
             <span>5 min</span>
             <span>3 hours</span>
           </div>
         </div>
       </div>
       
-      <DialogFooter className="border-t border-slate-700 pt-4">
-        <Button type="button" variant="outline" onClick={onClose} className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white">
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700">Save Changes</Button>
+        <Button type="submit">Save Changes</Button>
       </DialogFooter>
     </form>
   );

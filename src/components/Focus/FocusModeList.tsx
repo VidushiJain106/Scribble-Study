@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useFocusStore } from '@/lib/focusStore';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,10 +26,10 @@ export const FocusModeList: React.FC<FocusModeListProps> = ({ onEdit }) => {
 
   if (focusModes.length === 0) {
     return (
-      <div className="text-center p-12 bg-slate-800/70 backdrop-blur-sm rounded-2xl border border-slate-700">
-        <Zap className="h-12 w-12 mx-auto mb-4 text-indigo-400 opacity-70" />
-        <h3 className="text-xl font-bold mb-2 text-white">No Focus Modes Yet!</h3>
-        <p className="text-slate-400">Create your first focus mode to start blocking distractions.</p>
+      <div className="text-center p-12 bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-2xl border border-slate-200 dark:border-slate-800">
+        <Zap className="h-12 w-12 mx-auto mb-4 text-note-purple opacity-50" />
+        <h3 className="text-xl font-bold mb-2">No Focus Modes Yet!</h3>
+        <p className="text-muted-foreground">Create your first focus mode to start blocking distractions.</p>
       </div>
     );
   }
@@ -38,23 +39,23 @@ export const FocusModeList: React.FC<FocusModeListProps> = ({ onEdit }) => {
       {focusModes.map((mode) => (
         <Card 
           key={mode.id} 
-          className={`overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-slate-800 ${
+          className={`overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
             mode.id === activeFocusMode 
-              ? 'shadow-lg shadow-indigo-900/50 border-2 border-indigo-500' 
-              : 'border border-slate-700'
+              ? 'shadow-lg shadow-purple-200 dark:shadow-purple-900/30 border-2 border-purple-400' 
+              : 'border border-slate-200 dark:border-slate-800'
           }`}
         >
           <div className="h-2.5" style={{ backgroundColor: mode.color }} />
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
-              <CardTitle className="text-lg font-bold text-white">{mode.name}</CardTitle>
+              <CardTitle className="text-lg font-bold">{mode.name}</CardTitle>
               <Switch 
                 checked={mode.id === activeFocusMode}
                 onCheckedChange={() => handleToggleFocusMode(mode)}
-                className="data-[state=checked]:bg-indigo-600"
+                className="data-[state=checked]:bg-purple-500"
               />
             </div>
-            <div className="flex items-center text-sm text-slate-400 gap-1 mt-1">
+            <div className="flex items-center text-sm text-muted-foreground gap-1 mt-1">
               <Clock className="h-3.5 w-3.5" />
               <span>{mode.duration} min</span>
             </div>
@@ -62,7 +63,7 @@ export const FocusModeList: React.FC<FocusModeListProps> = ({ onEdit }) => {
           <CardContent className="pb-2">
             <Collapsible>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-full flex justify-between items-center py-1 mt-2 text-xs text-slate-300 hover:bg-slate-700">
+                <Button variant="ghost" size="sm" className="w-full flex justify-between items-center py-1 mt-2 text-xs">
                   <span>Focus settings</span>
                   <span className="text-xs">▼</span>
                 </Button>
@@ -70,25 +71,25 @@ export const FocusModeList: React.FC<FocusModeListProps> = ({ onEdit }) => {
               <CollapsibleContent>
                 <div className="flex flex-wrap gap-2 mb-4 mt-2">
                   {mode.muteNotifications && (
-                    <Badge variant="outline" className="bg-indigo-900/30 border-indigo-700 text-indigo-300 flex items-center gap-1 py-1">
+                    <Badge variant="outline" className="bg-purple-50 dark:bg-purple-900/20 flex items-center gap-1 py-1">
                       <BellOff className="h-3 w-3" />
                       <span>No notifications</span>
                     </Badge>
                   )}
                   {mode.muteCalls && (
-                    <Badge variant="outline" className="bg-blue-900/30 border-blue-700 text-blue-300 flex items-center gap-1 py-1">
+                    <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20 flex items-center gap-1 py-1">
                       <MicOff className="h-3 w-3" />
                       <span>No calls</span>
                     </Badge>
                   )}
                   {mode.blockEntertainmentApps && (
-                    <Badge variant="outline" className="bg-violet-900/30 border-violet-700 text-violet-300 flex items-center gap-1 py-1">
+                    <Badge variant="outline" className="bg-pink-50 dark:bg-pink-900/20 flex items-center gap-1 py-1">
                       <TimerOff className="h-3 w-3" />
                       <span>Block fun apps</span>
                     </Badge>
                   )}
                   {mode.blockAllApps && (
-                    <Badge variant="outline" className="bg-slate-900/50 border-slate-700 text-slate-300 flex items-center gap-1 py-1">
+                    <Badge variant="outline" className="bg-indigo-50 dark:bg-indigo-900/20 flex items-center gap-1 py-1">
                       <Clock className="h-3 w-3" />
                       <span>Block all apps</span>
                     </Badge>
@@ -97,11 +98,11 @@ export const FocusModeList: React.FC<FocusModeListProps> = ({ onEdit }) => {
               </CollapsibleContent>
             </Collapsible>
           </CardContent>
-          <CardFooter className="flex justify-between items-center pt-2 border-t border-slate-700">
+          <CardFooter className="flex justify-between items-center pt-2 border-t">
             <Button 
               variant="ghost"
               size="sm"
-              className="text-slate-300 hover:bg-slate-700"
+              className="hover:bg-slate-100 dark:hover:bg-slate-800"
               onClick={() => onEdit(mode.id)}
             >
               <Edit className="h-4 w-4 mr-1" />
@@ -112,7 +113,7 @@ export const FocusModeList: React.FC<FocusModeListProps> = ({ onEdit }) => {
               <Button 
                 variant="ghost" 
                 size="icon"
-                className="h-8 w-8 rounded-full text-red-400 hover:bg-red-900/20"
+                className="h-8 w-8 rounded-full text-destructive hover:bg-red-50 dark:hover:bg-red-900/20"
                 onClick={() => deleteFocusMode(mode.id)}
               >
                 <Trash2 className="h-4 w-4" />
@@ -123,8 +124,8 @@ export const FocusModeList: React.FC<FocusModeListProps> = ({ onEdit }) => {
                 variant="ghost"
                 className={`h-8 w-8 rounded-full ${
                   mode.id === activeFocusMode
-                    ? 'bg-indigo-900/50 text-indigo-300'
-                    : 'hover:bg-slate-700 text-slate-300'
+                    ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300'
+                    : 'hover:bg-purple-50 dark:hover:bg-purple-900/20'
                 }`}
                 onClick={() => handleToggleFocusMode(mode)}
               >
