@@ -14,7 +14,7 @@ interface NoteActionsProps {
   note: Note | null;
   isAnalyzing: boolean;
   isSaving?: boolean;
-  handleSave: () => void;
+  handleSave: (title: string, content: string) => Promise<void>;
   deleteNote: (id: string) => void;
   handleFileUpload: (attachment: any) => void;
   handleExplainClick: () => void;
@@ -92,7 +92,7 @@ export const NoteActions: FC<NoteActionsProps> = ({
             variant="outline" 
             size="icon" 
             className="rounded-full" 
-            onClick={handleSave} 
+            onClick={() => handleSave(title, note?.content || "")} 
             aria-label="Save note"
             disabled={isSaving || !note}
           >
