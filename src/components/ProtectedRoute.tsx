@@ -1,8 +1,7 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { NotesInitializer } from '@/lib/store';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,10 +12,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   
   // If authentication is still loading, show a loading state
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-      <span className="ml-2">Loading...</span>
-    </div>;
+    return <div>Loading...</div>;
   }
   
   // If user is not authenticated, redirect to the landing page
@@ -25,12 +21,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
   
   // User is authenticated, render the protected content
-  return (
-    <>
-      <NotesInitializer />
-      {children}
-    </>
-  );
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;
