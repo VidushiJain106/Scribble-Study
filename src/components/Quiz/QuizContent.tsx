@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,11 +22,45 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
   const { toast } = useToast();
   
+  // Update currentQuestionIndex if questionId no longer exists (after quiz refresh)
+  useEffect(() => {
+    if (quiz && quiz.questions.length > 0) {
+      // Ensure the current question index is not out of bounds
+      if (currentQuestionIndex >= quiz.questions.length) {
+        setCurrentQuestionIndex(quiz.questions.length - 1);
+      }
+    }
+  }, [quiz, currentQuestionIndex]);
+  
+  // Handle case where the quiz might be null or have no questions
+  if (!quiz || quiz.questions.length === 0) {
+    return (
+      <div className="container max-w-3xl mx-auto py-6 px-4">
+        <Button
+          variant="ghost"
+          className="mb-6 flex items-center gap-1"
+          onClick={onBackToExplanation}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to explanation
+        </Button>
+        <Card className="p-6">
+          <h2 className="text-xl font-medium mb-4">No questions available</h2>
+          <p className="text-muted-foreground">Please generate some quiz questions to test your knowledge.</p>
+        </Card>
+      </div>
+    );
+  }
+  
   const currentQuestion = quiz.questions[currentQuestionIndex];
-  const currentAnswer = answers[currentQuestion.id];
+  const currentAnswer = currentQuestion ? answers[currentQuestion.id] : undefined;
   const isLastQuestion = currentQuestionIndex === quiz.questions.length - 1;
-  const hasAnsweredAll = Object.keys(answers).length === quiz.questions.length;
-  const allCorrect = hasAnsweredAll && Object.values(answers).every(answer => answer.isCorrect);
+  
+  // Calculate if user has answered all questions correctly
+  const questionsAnswered = Object.keys(answers).length;
+  const correctAnswers = Object.values(answers).filter(answer => answer.isCorrect).length;
+  const hasAnsweredAll = questionsAnswered === quiz.questions.length;
+  const allCorrect = hasAnsweredAll && questionsAnswered === correctAnswers;
   
   const handleShowHint = () => {
     if (currentQuestion.hint) {
@@ -38,6 +72,8 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
   };
   
   const handleAnswerChange = (value: string) => {
+    if (!currentQuestion) return;
+    
     setAnswers(prev => ({
       ...prev,
       [currentQuestion.id]: {
@@ -49,6 +85,8 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
   };
   
   const handleSubmitAnswer = async () => {
+    if (!currentQuestion) return;
+    
     const answer = answers[currentQuestion.id];
     
     if (!answer || !answer.answer.trim()) {
@@ -156,7 +194,7 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
       await onGenerateMoreQuestions();
       toast({
         title: "Success",
-        description: "New questions have been generated!",
+        description: "New questions have been added to your quiz!",
       });
     } catch (error) {
       toast({
@@ -168,6 +206,9 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
       setIsGeneratingMore(false);
     }
   };
+  
+  // Ensure we have valid data before rendering
+  if (!currentQuestion) return null;
   
   return (
     <div className="container max-w-3xl mx-auto py-6 px-4">
@@ -195,9 +236,9 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
         )}
       </div>
       
-      <p className="text-muted-foreground mb-8">{quiz.introduction}</p>
+      <p className="text-muted-foreground mb-6">{quiz.introduction}</p>
       
-      <div className="flex gap-4 mb-6 flex-wrap">
+      <div className="flex flex-wrap gap-2 mb-6">
         {quiz.questions.map((q, idx) => (
           <Button
             key={q.id}
@@ -206,9 +247,18 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
             onClick={() => setCurrentQuestionIndex(idx)}
           >
             Q{idx + 1}
-            {answers[q.id]?.isCorrect === true && <CheckCircle className="ml-2 h-4 w-4 text-green-500" />}
+            {answers[q.id]?.isCorrect === true && <CheckCircle className="ml-1 h-4 w-4 text-green-500" />}
           </Button>
         ))}
+      </div>
+
+      <div className="flex justify-between items-center mb-2">
+        <div className="text-sm text-muted-foreground">
+          {correctAnswers} of {quiz.questions.length} questions answered correctly
+        </div>
+        <div className="text-sm font-medium">
+          Question {currentQuestionIndex + 1} of {quiz.questions.length}
+        </div>
       </div>
       
       <Card className="p-6 mb-6">
@@ -287,7 +337,7 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
             <div>
               <h2 className="text-lg font-medium mb-1 text-green-800">Congratulations!</h2>
               <p className="text-green-700">
-                You've correctly answered all questions. You have a solid understanding of this topic.
+                You've correctly answered all {quiz.questions.length} questions. You have a solid understanding of this topic.
               </p>
               <div className="flex gap-3 mt-4">
                 <Button

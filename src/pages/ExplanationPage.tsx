@@ -47,10 +47,15 @@ const ExplanationPage = () => {
   };
 
   const handleGenerateMoreQuestions = async () => {
+    if (!quiz) return;
+    
     setIsGeneratingMoreQuestions(true);
     try {
-      // Force generate a new quiz with the force parameter
+      // Force generate new questions and add them to existing ones
       await generateQuiz(true);
+      
+      // No need to update the state manually since useExplanationData
+      // will update the quiz state with the combined questions
     } catch (error) {
       console.error("Error generating more questions:", error);
     } finally {

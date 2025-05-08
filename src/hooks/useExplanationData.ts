@@ -130,26 +130,32 @@ export function useExplanationData(noteId: string | undefined, note: any) {
       }
       
       // Use withSupabase helper to safely fetch or generate quiz
-      const quiz = await withSupabase(
+      const quizResult = await withSupabase(
         async (supabase) => {
-          // Check if we have a stored quiz and don't need to force generation
+          let existingQuiz = null;
+          
+          // Check if we have a stored quiz
           if (!forceGenerate) {
-            const { data: existingQuiz } = await supabase
+            const { data: fetchedQuiz } = await supabase
               .from('quizzes')
               .select('*')
               .eq('note_id', noteId)
               .single();
             
-            if (existingQuiz) {
-              // Ensure we properly type the response from Supabase
-              return {
-                id: existingQuiz.id as string,
-                noteId: existingQuiz.note_id as string,
-                topic: existingQuiz.topic as string,
-                introduction: existingQuiz.introduction as string,
-                questions: existingQuiz.questions as Quiz['questions'],
-                createdAt: new Date(existingQuiz.created_at as string)
+            if (fetchedQuiz) {
+              existingQuiz = {
+                id: fetchedQuiz.id as string,
+                noteId: fetchedQuiz.note_id as string,
+                topic: fetchedQuiz.topic as string,
+                introduction: fetchedQuiz.introduction as string,
+                questions: fetchedQuiz.questions as Quiz['questions'],
+                createdAt: new Date(fetchedQuiz.created_at as string)
               };
+              
+              // If we're not forcing generation and we have an existing quiz, return it
+              if (!forceGenerate) {
+                return existingQuiz;
+              }
             }
           }
           
@@ -167,6 +173,22 @@ export function useExplanationData(noteId: string | undefined, note: any) {
             throw new Error(error.message);
           }
           
+          // If we're generating more questions (forceGenerate is true) and we have an existing quiz
+          if (forceGenerate && quiz) {
+            // Create a set of existing question IDs to avoid duplicates
+            const existingIds = new Set(quiz.questions.map(q => q.id));
+            
+            // Filter out any duplicate questions that might have the same ID
+            const newUniqueQuestions = data.questions.filter(q => !existingIds.has(q.id));
+            
+            // Return a combined quiz with all questions
+            return {
+              ...quiz,
+              questions: [...quiz.questions, ...newUniqueQuestions],
+            };
+          }
+          
+          // Otherwise return a new quiz
           return {
             noteId,
             topic: explanation.topic,
@@ -178,10 +200,10 @@ export function useExplanationData(noteId: string | undefined, note: any) {
         null
       );
       
-      if (quiz) {
+      if (quizResult) {
         // Explicitly cast to Quiz type to ensure type safety
-        setQuiz(quiz as Quiz);
-        return quiz as Quiz;
+        setQuiz(quizResult as Quiz);
+        return quizResult as Quiz;
       } else {
         toast({
           title: "Error",
@@ -190,7 +212,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
         });
       }
     } catch (error) {
-      console.error("Error fetching quiz:", error);
+      console.error("Error generating quiz:", error);
       toast({
         title: "Error",
         description: "An error occurred while generating the quiz.",
