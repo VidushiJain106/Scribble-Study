@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Quiz, QuizAnswer, QuizQuestion } from "@/types";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle, ChevronDown, ChevronUp, HelpCircle, Lightbulb } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle, ChevronDown, ChevronUp, HelpCircle, Lightbulb, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { withSupabase, getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
 
@@ -12,13 +11,15 @@ interface QuizContentProps {
   quiz: Quiz;
   onComplete: () => void;
   onBackToExplanation: () => void;
+  onGenerateMoreQuestions?: () => Promise<void>;
 }
 
-export function QuizContent({ quiz, onComplete, onBackToExplanation }: QuizContentProps) {
+export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateMoreQuestions }: QuizContentProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, QuizAnswer>>({});
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
+  const [isGeneratingMore, setIsGeneratingMore] = useState(false);
   const { toast } = useToast();
   
   const currentQuestion = quiz.questions[currentQuestionIndex];
@@ -146,6 +147,27 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation }: QuizConte
       default: return "text-foreground";
     }
   };
+
+  const handleGenerateMoreQuestions = async () => {
+    if (!onGenerateMoreQuestions) return;
+    
+    setIsGeneratingMore(true);
+    try {
+      await onGenerateMoreQuestions();
+      toast({
+        title: "Success",
+        description: "New questions have been generated!",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate more questions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingMore(false);
+    }
+  };
   
   return (
     <div className="container max-w-3xl mx-auto py-6 px-4">
@@ -158,15 +180,29 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation }: QuizConte
         Back to explanation
       </Button>
       
-      <h1 className="text-3xl font-bold mb-4">Test Your Knowledge</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-3xl font-bold">Test Your Knowledge</h1>
+        {onGenerateMoreQuestions && (
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={handleGenerateMoreQuestions}
+            disabled={isGeneratingMore}
+          >
+            <Plus className="h-4 w-4" />
+            {isGeneratingMore ? "Generating..." : "More Questions"}
+          </Button>
+        )}
+      </div>
+      
       <p className="text-muted-foreground mb-8">{quiz.introduction}</p>
       
-      <div className="flex gap-4 mb-6">
+      <div className="flex gap-4 mb-6 flex-wrap">
         {quiz.questions.map((q, idx) => (
           <Button
             key={q.id}
             variant={currentQuestionIndex === idx ? "default" : "outline"}
-            className={`flex-1 ${answers[q.id]?.isCorrect === true ? "border-green-500" : ""}`}
+            className={`${answers[q.id]?.isCorrect === true ? "border-green-500" : ""}`}
             onClick={() => setCurrentQuestionIndex(idx)}
           >
             Q{idx + 1}
@@ -253,13 +289,24 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation }: QuizConte
               <p className="text-green-700">
                 You've correctly answered all questions. You have a solid understanding of this topic.
               </p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={onComplete}
-              >
-                Continue Learning
-              </Button>
+              <div className="flex gap-3 mt-4">
+                <Button
+                  variant="outline"
+                  onClick={onComplete}
+                >
+                  Continue Learning
+                </Button>
+                {onGenerateMoreQuestions && (
+                  <Button
+                    onClick={handleGenerateMoreQuestions}
+                    disabled={isGeneratingMore}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {isGeneratingMore ? "Generating..." : "Generate More Questions"}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </Card>

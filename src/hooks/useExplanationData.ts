@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { withSupabase, isSupabaseConfigured } from "@/lib/supabaseClient";
@@ -114,7 +113,7 @@ export function useExplanationData(noteId: string | undefined, note: any) {
   /**
    * Generate or fetch quiz based on explanation
    */
-  const generateQuiz = async () => {
+  const generateQuiz = async (forceGenerate: boolean = false) => {
     if (!noteId || !explanation) return;
     
     setLoading(true);
@@ -133,45 +132,48 @@ export function useExplanationData(noteId: string | undefined, note: any) {
       // Use withSupabase helper to safely fetch or generate quiz
       const quiz = await withSupabase(
         async (supabase) => {
-          // Check if we have a stored quiz
-          const { data: existingQuiz } = await supabase
-            .from('quizzes')
-            .select('*')
-            .eq('note_id', noteId)
-            .single();
-          
-          if (existingQuiz) {
-            // Ensure we properly type the response from Supabase
-            return {
-              id: existingQuiz.id as string,
-              noteId: existingQuiz.note_id as string,
-              topic: existingQuiz.topic as string,
-              introduction: existingQuiz.introduction as string,
-              questions: existingQuiz.questions as Quiz['questions'],
-              createdAt: new Date(existingQuiz.created_at as string)
-            };
-          } else {
-            // Generate a new quiz
-            const { data, error } = await supabase.functions.invoke('generate-quiz', {
-              body: {
-                noteId,
-                topic: explanation.topic,
-                explanation: JSON.stringify(explanation.content)
-              },
-            });
+          // Check if we have a stored quiz and don't need to force generation
+          if (!forceGenerate) {
+            const { data: existingQuiz } = await supabase
+              .from('quizzes')
+              .select('*')
+              .eq('note_id', noteId)
+              .single();
             
-            if (error) {
-              throw new Error(error.message);
+            if (existingQuiz) {
+              // Ensure we properly type the response from Supabase
+              return {
+                id: existingQuiz.id as string,
+                noteId: existingQuiz.note_id as string,
+                topic: existingQuiz.topic as string,
+                introduction: existingQuiz.introduction as string,
+                questions: existingQuiz.questions as Quiz['questions'],
+                createdAt: new Date(existingQuiz.created_at as string)
+              };
             }
-            
-            return {
+          }
+          
+          // Generate a new quiz
+          const { data, error } = await supabase.functions.invoke('generate-quiz', {
+            body: {
               noteId,
               topic: explanation.topic,
-              introduction: data.introduction,
-              questions: data.questions,
-              createdAt: new Date()
-            };
+              explanation: JSON.stringify(explanation.content),
+              forceGenerate
+            },
+          });
+          
+          if (error) {
+            throw new Error(error.message);
           }
+          
+          return {
+            noteId,
+            topic: explanation.topic,
+            introduction: data.introduction,
+            questions: data.questions,
+            createdAt: new Date()
+          };
         },
         null
       );

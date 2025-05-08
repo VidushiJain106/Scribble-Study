@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useNoteStore } from "@/lib/store";
@@ -16,6 +15,7 @@ const ExplanationPage = () => {
   const notes = useNoteStore(state => state.notes);
   const navigate = useNavigate();
   const [showQuiz, setShowQuiz] = useState(false);
+  const [isGeneratingMoreQuestions, setIsGeneratingMoreQuestions] = useState(false);
   
   const note = noteId ? notes.find(n => n.id === noteId) : null;
   const { 
@@ -45,8 +45,20 @@ const ExplanationPage = () => {
   const handleCompleteQuiz = () => {
     setShowQuiz(false);
   };
+
+  const handleGenerateMoreQuestions = async () => {
+    setIsGeneratingMoreQuestions(true);
+    try {
+      // Force generate a new quiz with the force parameter
+      await generateQuiz(true);
+    } catch (error) {
+      console.error("Error generating more questions:", error);
+    } finally {
+      setIsGeneratingMoreQuestions(false);
+    }
+  };
   
-  if (loading) {
+  if (loading && !isGeneratingMoreQuestions) {
     return <ExplanationLoading isGeneratingQuiz={showQuiz && !quiz} />;
   }
   
@@ -59,6 +71,7 @@ const ExplanationPage = () => {
       quiz={quiz}
       onComplete={handleCompleteQuiz} 
       onBackToExplanation={() => setShowQuiz(false)}
+      onGenerateMoreQuestions={handleGenerateMoreQuestions}
     />
   ) : (
     <ExplanationContent 
