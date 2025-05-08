@@ -1,7 +1,5 @@
 
 // This is a separate file to avoid circular dependencies
-import { ToastProps } from "@/components/ui/toast"
-
 import * as React from "react"
 
 const TOAST_LIMIT = 5
@@ -9,11 +7,14 @@ const TOAST_REMOVE_DELAY = 1000000
 
 type ToastActionElement = React.ReactElement<any, string | React.JSXElementConstructor<any>>
 
-export type ToasterToastProps = ToastProps & {
+export type ToasterToastProps = {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  variant?: "default" | "destructive"
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 const actionTypes = {
