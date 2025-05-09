@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 
@@ -12,6 +11,7 @@ interface ExplanationRequest {
   topic: string;
   concepts: string[];
   noteContent: string;
+  apiKey?: string;
 }
 
 interface ExplanationResponse {
@@ -43,11 +43,19 @@ serve(async (req) => {
       });
     }
     
-    // Get the API key from environment variables
-    const apiKey = Deno.env.get('OPENROUTER_API_KEY');
+    // Get API key from env first; we may use request body later
+    let apiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    // Parse request data
+    const requestData = await req.json() as ExplanationRequest;
+    
+    // If env key missing, use key passed in body
+    if (!apiKey && requestData.apiKey) {
+      apiKey = requestData.apiKey;
+    }
     
     if (!apiKey) {
-      console.error('OPENROUTER_API_KEY not configured');
+      console.error('OPENAI_API_KEY not configured');
       // Return mock data for testing purposes
       return new Response(JSON.stringify({
         title: "Understanding Carbon Dioxide Levels",
@@ -73,31 +81,19 @@ serve(async (req) => {
       });
     }
     
-    // Parse request data
-    const requestData = await req.json() as ExplanationRequest;
-    
-    if (!requestData || !requestData.topic || !requestData.noteContent) {
-      return new Response(JSON.stringify({ error: 'Invalid request data' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-    
     console.log(`Generating explanation for topic: ${requestData.topic}`);
-    console.log(`Using OPENROUTER_API_KEY: ${apiKey.substring(0, 5)}...`);
+    console.log(`Using OPENAI_API_KEY: ${apiKey.substring(0, 5)}...`);
     
     try {
-      // Call OpenRouter API
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      // Call OpenAI API
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': Deno.env.get('APP_URL') || 'https://localhost:3000',
-          'X-Title': 'ScribbleSnap Explanation Generation'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'openai/gpt-3.5-turbo',
+          model: 'gpt-3.5-turbo',
           messages: [
             {
               role: 'system', 
@@ -132,14 +128,14 @@ serve(async (req) => {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('OpenRouter API error response:', response.status, errorText);
-        throw new Error(`OpenRouter API error: ${response.status} ${errorText}`);
+        console.error('OpenAI API error response:', response.status, errorText);
+        throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
       }
       
       const result = await response.json();
       
       if (result.error) {
-        console.error('OpenRouter API error:', result.error);
+        console.error('OpenAI API error:', result.error);
         return new Response(JSON.stringify({ 
           error: 'Error generating explanation',
           title: "Error Processing Content", 
@@ -229,9 +225,9 @@ serve(async (req) => {
         });
       }
     } catch (fetchError) {
-      console.error('Fetch error:', fetchError);
+      console.error(`Error calling OpenAI: ${fetchError.message}`, fetchError);
       return new Response(JSON.stringify({ 
-        error: `Error calling OpenRouter: ${fetchError.message}`,
+        error: `Error calling OpenAI: ${fetchError.message}`,
         title: "Error Generating Explanation",
         sections: [
           {

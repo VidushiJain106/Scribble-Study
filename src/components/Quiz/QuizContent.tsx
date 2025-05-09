@@ -151,6 +151,7 @@ export function QuizContent({ quiz, onComplete, onBackToExplanation, onGenerateM
               question: currentQuestion,
               answer: answer.answer,
               topic: quiz.topic,
+              apiKey: import.meta.env.VITE_OPENAI_API_KEY,
             },
           });
           

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { withSupabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { Explanation, Quiz } from "@/types";
+import OpenAI from 'openai';
 
 /**
  * Hook for managing explanation and quiz data
@@ -60,7 +61,8 @@ export function useExplanationData(noteId: string | undefined, note: any) {
                 noteId,
                 topic: note.analysis.mainTopic,
                 concepts: note.analysis.concepts,
-                noteContent: note.content
+                noteContent: note.content,
+                apiKey: import.meta.env.VITE_OPENAI_API_KEY
               },
             });
             
@@ -90,12 +92,55 @@ export function useExplanationData(noteId: string | undefined, note: any) {
         setExplanation(explanation as Explanation);
         return explanation as Explanation;
       } else {
-        toast({
-          title: "Error",
-          description: "Failed to get explanation. Please try again later.",
-          variant: "destructive",
-        });
+        // If Supabase call failed, fallback to client-side OpenAI generation
+        try {
+          const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+          if (!apiKey) throw new Error('Missing OpenAI API key');
+
+          const openai = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
+
+          const completion = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [
+              { role: 'system', content: 'You are a helpful assistant that writes educational explanations in JSON.' },
+              {
+                role: 'user',
+                content: `Write an explanation (JSON with fields: title, sections[{title,content}], summary) about ${note?.analysis?.mainTopic || 'this topic'}. Base it on these concepts: ${note?.analysis?.concepts?.join(', ') || ''}. Notes: ${note?.content?.slice(0,500)}`
+              }
+            ],
+            response_format: { type: 'json_object' },
+            max_tokens: 800
+          });
+
+          const jsonContent = completion.choices?.[0]?.message?.content?.trim();
+          if (jsonContent) {
+            const dataParsed = JSON.parse(jsonContent);
+            const fallbackExplanation: Explanation = {
+              noteId: noteId || '',
+              topic: note?.analysis?.mainTopic || 'Topic',
+              title: dataParsed.title || 'Generated Explanation',
+              content: {
+                title: dataParsed.title || '',
+                sections: dataParsed.sections || [],
+                summary: dataParsed.summary || '' ,
+                furtherResources: dataParsed.furtherResources || []
+              },
+              createdAt: new Date()
+            };
+            setExplanation(fallbackExplanation);
+            return fallbackExplanation;
+          }
+        } catch (fallbackErr) {
+          console.error('Fallback OpenAI generation failed', fallbackErr);
+        }
       }
+
+      // fallback may not produce explanation; notify user
+      toast({
+        title: "Error",
+        description: "Failed to get explanation. Please try again later.",
+        variant: "destructive",
+      });
     } catch (error) {
       console.error("Error fetching explanation:", error);
       toast({
@@ -116,130 +161,63 @@ export function useExplanationData(noteId: string | undefined, note: any) {
    * @param difficulty Optional difficulty level for generated questions (easy, moderate, hard, mixed)
    */
   const generateQuiz = async (forceGenerate: boolean = false, difficulty?: string) => {
-    if (!noteId || !explanation) return;
-    
+    if (!noteId) return;
+
     setLoading(true);
-    
+
     try {
-      if (!isSupabaseConfigured()) {
-        toast({
-          title: "Connection Error",
-          description: "Cannot connect to Supabase. Please try again later.",
-          variant: "destructive",
-        });
+      const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+      if (!apiKey) {
+        toast({ title: 'Error', description: 'Missing OpenAI API key', variant: 'destructive' });
         setLoading(false);
         return;
       }
-      
-      // Use withSupabase helper to safely fetch or generate quiz
-      const quizResult = await withSupabase(
-        async (supabase) => {
-          let existingQuiz = null;
-          
-          // Check if we have a stored quiz
-          if (!forceGenerate) {
-            const { data: fetchedQuiz } = await supabase
-            .from('quizzes')
-            .select('*')
-            .eq('note_id', noteId)
-            .single();
-          
-            if (fetchedQuiz) {
-              existingQuiz = {
-                id: fetchedQuiz.id as string,
-                noteId: fetchedQuiz.note_id as string,
-                topic: fetchedQuiz.topic as string,
-                introduction: fetchedQuiz.introduction as string,
-                questions: fetchedQuiz.questions as Quiz['questions'],
-                createdAt: new Date(fetchedQuiz.created_at as string)
-            };
-              
-              // If we're not forcing generation and we have an existing quiz, return it
-              if (!forceGenerate) {
-                return existingQuiz;
-              }
-            }
+
+      const openai = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
+
+      // Build context: use structured explanation if available, otherwise raw note content
+      const contextText = explanation
+        ? `Structured JSON explanation: ${JSON.stringify(explanation.content).slice(0, 800)}...`
+        : `Raw note content: ${note?.content?.slice(0, 800)}...`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: 'You are an assistant that creates study quizzes as JSON.' },
+          {
+            role: 'user',
+            content: `Create 5 multiple-choice quiz questions (${difficulty || 'mixed'} difficulty) for the topic "${note?.title || explanation?.topic || 'General'}".
+
+${contextText}
+
+Return ONLY a JSON object with fields: topic, introduction (one sentence), questions[{id,question,difficulty,hint,explanation}]`
           }
-          
-          // Generate a new quiz or additional questions
-            const { data, error } = await supabase.functions.invoke('generate-quiz', {
-              body: {
-                noteId,
-                topic: explanation.topic,
-              explanation: JSON.stringify(explanation.content),
-              forceGenerate,
-              difficulty: difficulty || 'mixed'
-              },
-            });
-            
-            if (error) {
-              throw new Error(error.message);
-            }
-            
-          // If we're generating more questions (forceGenerate is true) and we already have a quiz state
-          if (forceGenerate && quiz) {
-            console.log("Merging new questions with existing ones", {
-              existingQuestions: quiz.questions.length,
-              newQuestions: data.questions.length,
-              difficulty: difficulty || 'mixed'
-            });
-            
-            // Create a set of existing question IDs to detect duplicates
-            const existingIds = new Set(quiz.questions.map(q => q.id));
-            
-            // Generate new IDs for the new questions to avoid any conflicts
-            const newQuestions = data.questions.map(q => ({
-              ...q,
-              id: `new-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-            }));
-            
-            // Return a new quiz object with combined questions
-            return {
-              ...quiz,
-              questions: [...quiz.questions, ...newQuestions],
-            };
-          }
-          
-          // Otherwise return a brand new quiz
-            return {
-              noteId,
-              topic: explanation.topic,
-              introduction: data.introduction,
-              questions: data.questions,
-              createdAt: new Date()
-            };
-        },
-        null
-      );
-      
-      if (quizResult) {
-        console.log("Quiz updated successfully", {
-          questionCount: quizResult.questions?.length || 0,
-          difficulty: difficulty || 'mixed'
-        });
-        
-        // Explicitly cast to Quiz type to ensure type safety
-        setQuiz(quizResult as Quiz);
-        return quizResult as Quiz;
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to generate quiz. Please try again later.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error generating quiz:", error);
-      toast({
-        title: "Error",
-        description: "An error occurred while generating the quiz.",
-        variant: "destructive",
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens: 900
       });
+
+      const content = completion.choices?.[0]?.message?.content?.trim();
+      if (content) {
+        const parsed = JSON.parse(content);
+        const newQuiz: Quiz = {
+          noteId,
+          topic: parsed.topic || (explanation?.topic ?? 'Topic'),
+          introduction: parsed.introduction || '',
+          questions: parsed.questions || [],
+          createdAt: new Date()
+        };
+        setQuiz(newQuiz);
+        return newQuiz;
+      }
+
+      toast({ title: 'Error', description: 'Could not generate quiz', variant: 'destructive' });
+    } catch (err) {
+      console.error('Error generating quiz with OpenAI', err);
+      toast({ title: 'Error', description: 'Could not generate quiz', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
-    
-    return null;
   };
 
   return {

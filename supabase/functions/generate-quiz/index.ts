@@ -12,6 +12,7 @@ interface QuizRequest {
   explanation: string;
   difficulty?: string;
   questionsCount?: number;
+  apiKey?: string;
 }
 
 interface QuizQuestion {
@@ -67,10 +68,18 @@ serve(async (req) => {
     }
     
     const token = authHeader.replace('Bearer ', '');
-    const apiKey = Deno.env.get('OPENROUTER_API_KEY');
+    // Get OpenAI API key from env or request body
+    let apiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    // Parse request data early to get potential apiKey
+    const requestData = await req.json() as QuizRequest;
+    
+    if (!apiKey && requestData.apiKey) {
+      apiKey = requestData.apiKey;
+    }
     
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API key not configured' }), {
+      return new Response(JSON.stringify({ error: 'OPENAI_API_KEY not configured' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
@@ -83,9 +92,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: `Bearer ${token}` } } }
     );
     
-    // Parse request data
-    const requestData = await req.json() as QuizRequest;
-    
+    // requestData already parsed above
     if (!requestData || !requestData.topic || !requestData.explanation) {
       return new Response(JSON.stringify({ error: 'Invalid request data' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -178,17 +185,16 @@ serve(async (req) => {
         contextPrompt = `Create quiz questions on: ${requestData.topic}.\n\nContext: ${requestData.explanation.substring(0, 500)}...`;
       }
       
-      // Call OpenRouter API with a simpler, more focused prompt
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      // Call OpenAI API with a simpler, more focused prompt
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': Deno.env.get('APP_URL') || 'https://localhost:3000',
-          'X-Title': 'ScribbleSnap Quiz Generation'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'mistralai/mistral-7b-instruct', // Ultra-fast model option
+          // Use an OpenAI model; adjust as needed for your account
+          model: 'gpt-3.5-turbo',
           messages: [
             {
               role: 'system', 
@@ -225,7 +231,7 @@ serve(async (req) => {
       let quiz: QuizResponse;
       
       if (result.error) {
-        console.error('OpenRouter API error:', result.error);
+        console.error('OpenAI API error:', result.error);
         return new Response(JSON.stringify({ error: 'Error generating quiz' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,

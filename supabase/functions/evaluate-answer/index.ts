@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 
@@ -16,6 +15,7 @@ interface EvaluateAnswerRequest {
   };
   answer: string;
   topic: string;
+  apiKey?: string;
 }
 
 interface EvaluateAnswerResponse {
@@ -42,10 +42,10 @@ serve(async (req) => {
     }
     
     const token = authHeader.replace('Bearer ', '');
-    const apiKey = Deno.env.get('OPENROUTER_API_KEY');
+    let apiKey = Deno.env.get('OPENAI_API_KEY');
     
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API key not configured' }), {
+      return new Response(JSON.stringify({ error: 'OPENAI_API_KEY not configured' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
@@ -68,19 +68,21 @@ serve(async (req) => {
       });
     }
     
+    if (!apiKey && requestData.apiKey) {
+      apiKey = requestData.apiKey;
+    }
+    
     console.log(`Evaluating answer for question: ${requestData.question.question.substring(0, 50)}...`);
     
-    // Call OpenRouter API
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    // Call OpenAI API
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': Deno.env.get('APP_URL') || 'https://localhost:3000',
-        'X-Title': 'ScribbleSnap Answer Evaluation'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'openai/gpt-3.5-turbo',
+        model: 'gpt-3.5-turbo',
         messages: [
           {
             role: 'system', 
@@ -118,7 +120,7 @@ serve(async (req) => {
     let evaluation: EvaluateAnswerResponse;
     
     if (result.error) {
-      console.error('OpenRouter API error:', result.error);
+      console.error('OpenAI API error:', result.error);
       return new Response(JSON.stringify({ error: 'Error evaluating answer' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
