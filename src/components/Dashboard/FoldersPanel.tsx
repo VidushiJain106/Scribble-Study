@@ -11,7 +11,8 @@ import {
   X, 
   Folder as FolderIcon, 
   Plus, 
-  MoreVertical 
+  MoreVertical,
+  MoveDown
 } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -38,6 +39,7 @@ export function FoldersPanel() {
   const [editingFolder, setEditingFolder] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [draggedOverFolderId, setDraggedOverFolderId] = useState<string | null>(null);
+  const [isDraggingNote, setIsDraggingNote] = useState(false);
   
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
@@ -52,7 +54,18 @@ export function FoldersPanel() {
     if (notesWithoutFolders.length === 0) return;
     
     const folderName = autoGenerateFolderName(notesWithoutFolders);
-    createFolder(folderName, true);
+    const newFolderId = createFolder(folderName, true);
+    
+    // Auto-assign the first few notes without folders to this new folder
+    const notesToAssign = notesWithoutFolders.slice(0, 3);
+    notesToAssign.forEach(note => {
+      assignNoteToFolder(note.id, newFolderId);
+    });
+    
+    toast({
+      title: "Folder created",
+      description: `Created "${folderName}" folder with ${notesToAssign.length} note${notesToAssign.length !== 1 ? 's' : ''}`,
+    });
   };
   
   const handleFolderClick = (folderId: string) => {
@@ -99,23 +112,50 @@ export function FoldersPanel() {
     setDraggedOverFolderId(null);
   };
 
+  // Global drag handlers for the Folders section
+  const handleGlobalDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingNote(true);
+  };
+
+  const handleGlobalDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingNote(false);
+  };
+
   const handleDrop = (e: React.DragEvent, folderId: string) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDraggingNote(false);
     
     // Get the dragged note ID
-    const noteId = e.dataTransfer.getData("noteId");
+    let noteId = e.dataTransfer.getData("noteId");
+    if (!noteId) {
+      noteId = e.dataTransfer.getData("text/plain");
+    }
     if (noteId) {
+      // Get the current folder of this note
+      const draggedNote = notes.find(n => n.id === noteId);
+      if (draggedNote && draggedNote.folderId === folderId) {
+        // The note is already in this folder, don't do anything
+        toast({
+          title: "Note already in folder",
+          description: `"${draggedNote.title}" is already in this folder`,
+        });
+        setDraggedOverFolderId(null);
+        return;
+      }
+      
       // Move the note to this folder
       assignNoteToFolder(noteId, folderId);
       
       // Show success message
-      const note = notes.find(n => n.id === noteId);
+      const movedNote = notes.find(n => n.id === noteId);
       const folder = folders.find(f => f.id === folderId);
-      if (note && folder) {
+      if (movedNote && folder) {
         toast({
           title: "Note moved",
-          description: `"${note.title}" moved to "${folder.name}" folder`,
+          description: `"${movedNote.title}" moved to "${folder.name}" folder`,
         });
       }
     }
@@ -124,7 +164,11 @@ export function FoldersPanel() {
   };
   
   return (
-    <div className="space-y-2">
+    <div 
+      className={`space-y-2 ${isDraggingNote ? 'bg-accent/20 rounded-md p-2 -m-2' : ''}`}
+      onDragEnter={handleGlobalDragEnter}
+      onDragLeave={handleGlobalDragLeave}
+    >
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-semibold text-sm">Folders</h4>
         <Button 
@@ -157,12 +201,24 @@ export function FoldersPanel() {
         </Button>
       </div>
       
+      {isDraggingNote && (
+        <div className="text-xs text-muted-foreground text-center py-1 animate-pulse">
+          Drop on a folder to move note
+        </div>
+      )}
+      
       {/* Folders list */}
       <div className="space-y-1 mt-2">
         {folders.map((folder) => (
           <div 
             key={folder.id} 
-            className={`flex items-center justify-between group ${draggedOverFolderId === folder.id ? 'bg-accent/80 ring-2 ring-primary rounded-md' : ''}`}
+            className={`flex items-center justify-between group 
+              ${draggedOverFolderId === folder.id ? 
+                'bg-accent/80 ring-2 ring-primary rounded-md scale-105 shadow-md' : 
+                isDraggingNote ? 'hover:bg-accent/50 rounded-md transition-all duration-150' : ''
+              }
+              transition-all duration-200
+            `}
             onDragOver={(e) => handleDragOver(e, folder.id)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, folder.id)}
@@ -208,6 +264,12 @@ export function FoldersPanel() {
                     <span>{folder.name}</span>
                   </div>
                 </Button>
+                
+                {draggedOverFolderId === folder.id && (
+                  <div className="mr-2">
+                    <MoveDown className="h-3 w-3 text-primary animate-bounce" />
+                  </div>
+                )}
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

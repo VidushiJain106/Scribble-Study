@@ -4,7 +4,7 @@ import { useFolderStore } from "@/lib/folderStore";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Sidebar } from "@/components/Dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
-import { Edit, Folder, Menu, Trash } from "lucide-react";
+import { Edit, Folder, Menu, Trash, ArrowLeft, FolderOpen, PenSquare } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -56,7 +56,29 @@ export default function FolderPage() {
   const notes = useNoteStore(state => 
     state.notes.filter(note => note.folderId === folderId)
   );
+  const createNote = useNoteStore(state => state.createNote);
+  const assignNoteToFolder = useNoteStore(state => state.assignNoteToFolder);
   const removeNoteFromFolder = useNoteStore(state => state.removeNoteFromFolder);
+
+  // Initialize folder name state only once when folder is loaded
+  useEffect(() => {
+    if (folder) {
+      setNewFolderName(folder.name);
+    }
+  }, [folder?.id]); // Only run when folder ID changes, not on every change to folder object
+
+  // Create a note in this folder - use useCallback to avoid recreation on each render
+  const handleCreateNote = useCallback(async () => {
+    if (!folderId) return;
+    
+    try {
+      const newNoteId = await createNote();
+      assignNoteToFolder(newNoteId, folderId);
+      navigate(`/note/${newNoteId}`);
+    } catch (error) {
+      console.error("Error creating note:", error);
+    }
+  }, [folderId, createNote, assignNoteToFolder, navigate]);
 
   if (!folder) {
     return (
@@ -84,25 +106,27 @@ export default function FolderPage() {
   }
   
   const handleRenameFolder = () => {
-    if (newFolderName.trim()) {
-      updateFolder(folderId!, { name: newFolderName });
-      setIsRenameDialogOpen(false);
-      
-      toast({
-        title: "Folder renamed",
-        description: `Folder has been renamed to "${newFolderName}"`,
-      });
-    }
+    if (!folderId || !newFolderName.trim()) return;
+    
+    updateFolder(folderId, { name: newFolderName });
+    setIsRenameDialogOpen(false);
+    
+    toast({
+      title: "Folder renamed",
+      description: `Folder has been renamed to "${newFolderName}"`,
+    });
   };
   
   const handleDeleteFolder = () => {
+    if (!folderId) return;
+    
     // Remove folder reference from all notes in this folder
     notes.forEach(note => {
       removeNoteFromFolder(note.id);
     });
     
     // Delete the folder
-    deleteFolder(folderId!);
+    deleteFolder(folderId);
     
     toast({
       title: "Folder deleted",
@@ -120,6 +144,9 @@ export default function FolderPage() {
     setIsRenameDialogOpen(true);
   };
   
+  // Create handlers outside render
+  const handleNavigateBack = () => navigate("/");
+  
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -127,20 +154,49 @@ export default function FolderPage() {
           <Sidebar />
         </ErrorBoundary>
         <main className="flex-1 p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <FloatingSidebarTrigger />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleNavigateBack}
+                className="text-muted-foreground"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                <span>Back</span>
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
               <div 
-                className="w-5 h-5 rounded-full mr-1" 
+                className="w-10 h-10 rounded-md flex items-center justify-center"
                 style={{ backgroundColor: folder.color || '#4f46e5' }}
-              />
-              <h1 className="text-2xl font-bold">{folder.name}</h1>
+              >
+                <FolderOpen className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">{folder.name}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {notes.length} note{notes.length !== 1 ? 's' : ''}
+                </p>
+              </div>
             </div>
             
             <div className="flex items-center gap-2">
+              <Button 
+                onClick={handleCreateNote}
+                className="flex items-center gap-2"
+              >
+                <PenSquare className="h-4 w-4" />
+                <span>New Note</span>
+              </Button>
+              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="outline" size="icon">
                     <Folder className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>

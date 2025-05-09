@@ -4,10 +4,10 @@ import { useCategoryStore } from "@/lib/categoryStore";
 import { useFolderStore, Folder } from "@/lib/folderStore";
 import { Note } from "@/types";
 import { formatDistanceToNow } from "date-fns";
-import { FileImage, Pen, Plus, FolderIcon, Check, MoreVertical } from "lucide-react";
+import { FileImage, Pen, Plus, FolderIcon, Check, MoreVertical, Grip } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { 
@@ -26,13 +26,15 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/use-toast";
 
 interface NoteListProps {
   category?: string;
   folderId?: string;
+  showFiled?: boolean;
 }
 
-export function NoteList({ category, folderId }: NoteListProps) {
+export function NoteList({ category, folderId, showFiled = true }: NoteListProps) {
   const notes = useNoteStore(state => state.notes);
   const createNote = useNoteStore(state => state.createNote);
   const assignNoteToFolder = useNoteStore(state => state.assignNoteToFolder);
@@ -46,12 +48,11 @@ export function NoteList({ category, folderId }: NoteListProps) {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   
-  // Drag-and-drop references
-  const dragItem = useRef<string | null>(null);
-  const dragOverItem = useRef<string | null>(null);
+  // Dragging state - use ref to avoid re-renders during drag
+  const draggedNoteId = useRef<string | null>(null);
   
-  // Get all subcategories for a category
-  const getAllSubcategories = (categoryName: string): string[] => {
+  // Create a memoized function for getting subcategories to avoid recalculation on every render
+  const getAllSubcategories = useCallback((categoryName: string): string[] => {
     const categoryItem = categoryItems.find(item => item.name === categoryName);
     if (!categoryItem || !categoryItem.subCategories) return [];
     
@@ -64,25 +65,31 @@ export function NoteList({ category, folderId }: NoteListProps) {
     });
     
     return subCategories;
-  };
+  }, [categoryItems]);
   
-  // Filter notes by category/folder
-  let filteredNotes = notes;
-  
-  // Filter by category if specified
-  if (category) {
-    filteredNotes = filteredNotes.filter(note => {
+  // Memoize the filtered notes to avoid recalculation on every render
+  const filteredNotes = useMemo(() => {
+    let result = notes;
+    
+    // Filter by category if specified
+    if (category) {
       const categories = [category, ...getAllSubcategories(category)];
-      return categories.includes(note.category);
-    });
-  }
+      result = result.filter(note => categories.includes(note.category));
+    }
+    
+    // Filter by folder if specified
+    if (folderId) {
+      result = result.filter(note => note.folderId === folderId);
+    } else if (!showFiled && !category) {
+      // When on the main screen (no category or folder) and not showing filed notes,
+      // filter out notes that have a folderId (in a folder)
+      result = result.filter(note => !note.folderId);
+    }
+    
+    return result;
+  }, [notes, category, folderId, getAllSubcategories, showFiled]);
   
-  // Filter by folder if specified
-  if (folderId) {
-    filteredNotes = filteredNotes.filter(note => note.folderId === folderId);
-  }
-  
-  const handleCreateNote = async () => {
+  const handleCreateNote = useCallback(async () => {
     if (!user) return;
     try {
       const newNoteId = await createNote(category as any);
@@ -96,57 +103,61 @@ export function NoteList({ category, folderId }: NoteListProps) {
     } catch (error) {
       console.error("Error creating note:", error);
     }
-  };
+  }, [user, createNote, category, folderId, assignNoteToFolder, navigate]);
   
-  const handleNoteClick = (noteId: string) => {
+  const handleNoteClick = useCallback((noteId: string) => {
     if (isSelectionMode) {
-      toggleNoteSelection(noteId);
+      setSelectedNotes(prev => 
+        prev.includes(noteId) 
+          ? prev.filter(id => id !== noteId) 
+          : [...prev, noteId]
+      );
     } else {
       navigate(`/note/${noteId}`);
     }
-  };
+  }, [isSelectionMode, navigate]);
 
-  const toggleNoteSelection = (noteId: string) => {
+  const toggleNoteSelection = useCallback((noteId: string) => {
     setSelectedNotes(prev => 
       prev.includes(noteId) 
         ? prev.filter(id => id !== noteId) 
         : [...prev, noteId]
     );
-  };
+  }, []);
 
-  const toggleSelectionMode = () => {
-    setIsSelectionMode(!isSelectionMode);
-    if (isSelectionMode) {
-      setSelectedNotes([]);
-    }
-  };
+  const toggleSelectionMode = useCallback(() => {
+    setIsSelectionMode(prev => !prev);
+    setSelectedNotes([]);
+  }, []);
 
-  const selectAllNotes = () => {
+  const selectAllNotes = useCallback(() => {
     if (selectedNotes.length === filteredNotes.length) {
       setSelectedNotes([]);
     } else {
       setSelectedNotes(filteredNotes.map(note => note.id));
     }
-  };
+  }, [selectedNotes.length, filteredNotes]);
 
-  const moveSelectedNotesToFolder = (targetFolderId: string) => {
+  const moveSelectedNotesToFolder = useCallback((targetFolderId: string) => {
     selectedNotes.forEach(noteId => {
       assignNoteToFolder(noteId, targetFolderId);
     });
     setSelectedNotes([]);
     setIsSelectionMode(false);
     setFolderDialogOpen(false);
-  };
+  }, [selectedNotes, assignNoteToFolder]);
 
-  // Drag handlers
-  const handleDragStart = (e: React.DragEvent, noteId: string) => {
+  // Use useCallback to prevent recreation of the function on every render
+  const handleDragStart = useCallback((e: React.DragEvent, noteId: string) => {
+    e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData("noteId", noteId);
-    dragItem.current = noteId;
-  };
+    e.dataTransfer.setData("text/plain", noteId); // Fallback for browsers that only allow text/plain
+    draggedNoteId.current = noteId;
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-  };
+  }, []);
 
   // Reset selection mode when navigating away
   useEffect(() => {
@@ -211,7 +222,7 @@ export function NoteList({ category, folderId }: NoteListProps) {
             </div>
             <CardTitle className="text-lg font-medium text-center mb-2">Create New Note</CardTitle>
             <CardDescription className="text-center">
-              Add a new note to your collection
+              {folderId ? "Add a new note to this folder" : "Add a new note to your collection"}
             </CardDescription>
           </CardContent>
         </Card>
@@ -220,6 +231,7 @@ export function NoteList({ category, folderId }: NoteListProps) {
         {filteredNotes.map((note) => (
           <div 
             key={note.id}
+            className="note-wrapper"
             draggable
             onDragStart={(e) => handleDragStart(e, note.id)}
           >
@@ -299,11 +311,29 @@ function NoteCard({
   isSelectionMode?: boolean;
   onSelect?: () => void;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const folders = useFolderStore(state => state.folders);
+  
+  // Get folder info if note is in a folder
+  const folder = note.folderId ? folders.find(f => f.id === note.folderId) : undefined;
+  
   return (
     <Card 
-      className={`note-card cursor-pointer h-64 bg-note-${note.color}-light hover:shadow-md transition-all duration-200 relative ${isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+      className={`note-card cursor-pointer h-64 bg-note-${note.color}-light hover:shadow-md transition-all duration-200 relative 
+        ${isSelected ? 'ring-2 ring-primary ring-offset-2' : ''} 
+        ${note.folderId ? 'border-l-4' : ''}
+      `}
+      style={note.folderId && folder ? { borderLeftColor: folder.color || '#4f46e5' } : {}}
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
+      {isHovered && (
+        <div className="absolute top-2 right-2 text-muted-foreground opacity-30 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+          <Grip className="h-4 w-4" />
+        </div>
+      )}
+      
       {isSelectionMode && (
         <div 
           className="absolute top-2 left-2 z-10"
@@ -315,7 +345,22 @@ function NoteCard({
           <Checkbox checked={isSelected} />
         </div>
       )}
-      <CardHeader className="pb-2">
+      
+      {folder && (
+        <div className="absolute top-2 left-2 text-xs text-muted-foreground flex items-center gap-1 max-w-[50%] overflow-hidden">
+          {!isSelectionMode && (
+            <>
+              <div 
+                className="w-2 h-2 rounded-full flex-shrink-0" 
+                style={{ backgroundColor: folder.color || '#4f46e5' }}
+              />
+              <span className="truncate">{folder.name}</span>
+            </>
+          )}
+        </div>
+      )}
+      
+      <CardHeader className={`pb-2 ${folder && !isSelectionMode ? 'pt-8' : ''}`}>
         <CardTitle className="line-clamp-2">{note.title}</CardTitle>
         <CardDescription>
           {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}

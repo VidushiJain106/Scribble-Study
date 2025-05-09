@@ -1,7 +1,7 @@
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Plus, FolderPlus, FileText, Clock, GraduationCap } from "lucide-react";
+import { Plus, FolderPlus, FileText, Clock, GraduationCap, FolderOpen } from "lucide-react";
 import { useNoteStore } from "@/lib/store";
 import { useCategoryStore } from "@/lib/categoryStore";
 import { UserMenu } from "./UserMenu";
@@ -42,6 +42,9 @@ export function Sidebar() {
     if (path === '/') {
       // For root path, check if we're on root or /app
       return location.pathname === '/' || location.pathname === '/app';
+    }
+    if (path === '/folders') {
+      return location.pathname === '/folders';
     }
     if (path === '/exam-prep') {
       // Only highlight Exam Prep for the exact base route (not nested)
@@ -86,6 +89,15 @@ export function Sidebar() {
         >
           <FileText className="h-4 w-4" />
           All Notes
+        </Button>
+        
+        <Button 
+          variant={isActive('/folders') ? "secondary" : "ghost"}
+          className={`justify-start w-full mb-2 flex items-center gap-2 ${isActive('/folders') ? 'bg-primary/10 text-primary font-medium' : ''}`}
+          onClick={() => handleNavigate('/folders')}
+        >
+          <FolderOpen className="h-4 w-4" />
+          Folders
         </Button>
         
         <Button 

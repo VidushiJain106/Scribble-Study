@@ -148,6 +148,13 @@ const App = () => {
                       </ProtectedRoute>
                     </ErrorBoundary>
                   } />
+                  <Route path="/folders" element={
+                    <ErrorBoundary>
+                      <ProtectedRoute>
+                        <Index />
+                      </ProtectedRoute>
+                    </ErrorBoundary>
+                  } />
                   <Route path="*" element={
                     <ErrorBoundary>
                       <NotFound />
