@@ -1,9 +1,8 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // Get environment variables for Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://hyykxbckbypxugsujcrz.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eWt4YmNrYnlweHVnc3VqY3J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2MzYyNDIsImV4cCI6MjA2MjIxMjI0Mn0.gPfir3ZSp-WfmSevNrsyK7f4Dm_6lVwBl1OPhyjJ5y8';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://tekrltwmyybjfxqeeylz.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRla3Jpd215eWdiamZ4cWVleWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3NTkzOTAsImV4cCI6MjA2MjMzNTM5MH0.iqGkzFcEvBprhK9s5671lzN2D4kURA_xta6jrH-cRNU';
 
 // Create a typed supabase client
 let supabaseClient: ReturnType<typeof createClient> | null = null;
