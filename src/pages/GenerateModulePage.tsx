@@ -27,13 +27,35 @@ export default function GenerateModulePage() {
     setLoading(true);
     setResponse('');
     try {
-      // Placeholder for real API call to LLM
-      // Replace this with fetch('/api/generate-module', { method: 'POST', body: JSON.stringify({ prompt }) })
-      await new Promise(r => setTimeout(r, 1500));
-      setResponse(`Generated module based on your prompt:\n\n${prompt}\n\n[Mock LLM response here]`);
-    } catch (err) {
+      const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+      if (!apiKey) {
+        throw new Error('Missing OpenAI API key (VITE_OPENAI_API_KEY).');
+      }
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            { role: 'system', content: 'You are a helpful assistant that creates structured learning modules.' },
+            { role: 'user', content: `Generate a learning/study module based on this prompt:\n${prompt}\n\nReturn sections, key points and a short summary.` },
+          ],
+          temperature: 0.7,
+          max_tokens: 800,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content || 'No content generated.';
+      setResponse(content.trim());
+    } catch (err: any) {
       console.error(err);
-      setResponse('Error generating module.');
+      setResponse(err.message || 'Error generating module.');
     } finally {
       setLoading(false);
     }

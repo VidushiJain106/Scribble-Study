@@ -1,8 +1,34 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+// @ts-ignore
+import { createProxyMiddleware } from 'http-proxy-middleware';
+// @ts-ignore
+import dotenv from 'dotenv';
+dotenv.config();
+
+const openAIProxyPlugin = () => ({
+  name: 'openai-proxy',
+  configureServer(server: any) {
+    server.middlewares.use(
+      '/api/generate-module',
+      createProxyMiddleware({
+        target: 'https://api.openai.com',
+        changeOrigin: true,
+        pathRewrite: {
+          '^/api/generate-module': '/v1/chat/completions',
+        },
+        onProxyReq: (proxyReq: any) => {
+          const apiKey = process.env.VITE_OPENAI_API_KEY;
+          if (apiKey) {
+            proxyReq.setHeader('Authorization', `Bearer ${apiKey}`);
+          }
+        },
+      })
+    );
+  },
+});
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -15,6 +41,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' &&
     componentTagger(),
+    mode === 'development' && openAIProxyPlugin(),
   ].filter(Boolean),
   resolve: {
     alias: {
