@@ -20,6 +20,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AuthPage from "./pages/AuthPage";
 import { isSupabaseConfigured } from "./lib/supabaseClient";
 import { useAuth } from "./contexts/AuthContext";
+import GenerateModulePage from "./pages/GenerateModulePage";
 
 // Add console logging for debugging Supabase configuration
 console.log("Supabase Configuration Check:", {
@@ -152,6 +153,13 @@ const App = () => {
                     <ErrorBoundary>
                       <ProtectedRoute>
                         <Index />
+                      </ProtectedRoute>
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/generate-module" element={
+                    <ErrorBoundary>
+                      <ProtectedRoute>
+                        <GenerateModulePage />
                       </ProtectedRoute>
                     </ErrorBoundary>
                   } />

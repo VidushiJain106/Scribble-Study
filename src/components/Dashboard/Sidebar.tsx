@@ -1,7 +1,7 @@
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Plus, FolderPlus, FileText, Clock, GraduationCap, FolderOpen } from "lucide-react";
+import { Plus, FolderPlus, FileText, Clock, GraduationCap, FolderOpen, Sparkles } from "lucide-react";
 import { useNoteStore } from "@/lib/store";
 import { useCategoryStore } from "@/lib/categoryStore";
 import { UserMenu } from "./UserMenu";
@@ -49,6 +49,9 @@ export function Sidebar() {
     if (path === '/exam-prep') {
       // Only highlight Exam Prep for the exact base route (not nested)
       return location.pathname === '/exam-prep';
+    }
+    if (path === '/generate-module') {
+      return location.pathname === '/generate-module';
     }
     return location.pathname.startsWith(path);
   };
@@ -107,6 +110,15 @@ export function Sidebar() {
         >
           <Clock className="h-4 w-4" />
           Focus Mode
+        </Button>
+        
+        <Button 
+          variant={isActive('/generate-module') ? "secondary" : "ghost"}
+          className={`justify-start w-full mb-2 flex items-center gap-2 ${isActive('/generate-module') ? 'bg-primary/10 text-primary font-medium' : ''}`}
+          onClick={() => handleNavigate('/generate-module')}
+        >
+          <Sparkles className="h-4 w-4" />
+          Generate Module
         </Button>
         
         <Button 
