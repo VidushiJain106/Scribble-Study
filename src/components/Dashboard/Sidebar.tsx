@@ -67,7 +67,7 @@ export function Sidebar() {
             setOpenMobile(false);
           }}
         >
-          ScribbleSnap
+          <h1 className="text-xl font-bold text-brand-600">StudyBuddy</h1>
         </Button>
         <Separator className="mb-4" />
       </div>

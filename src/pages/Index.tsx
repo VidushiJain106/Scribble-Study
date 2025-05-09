@@ -302,7 +302,7 @@ const Index = () => {
             <div className="mb-8 p-8 bg-gradient-to-r from-violet-500 to-primary rounded-lg shadow-lg text-white">
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-3xl font-bold mb-2">Welcome to ScribbleSnap</h2>
+                  <h2 className="text-3xl font-bold mb-2 text-brand-600">Welcome to StudyBuddy</h2>
                   <p className="text-white/90 max-w-md">
                     Take notes, upload files, and annotate PDFs & images all in one place.
                     Get started by creating a new note or explore your existing notes below.

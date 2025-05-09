@@ -77,7 +77,7 @@ const AuthPage: React.FC = () => {
           <div className="flex justify-center">
             <PenLine className="h-10 w-10 text-primary" />
           </div>
-          <h1 className="mt-2 text-3xl font-bold">ScribbleSnap</h1>
+          <h1 className="mt-2 text-3xl font-bold text-brand-600">StudyBuddy</h1>
           <p className="mt-1 text-sm text-muted-foreground">Your intelligent note-taking companion</p>
         </div>
         

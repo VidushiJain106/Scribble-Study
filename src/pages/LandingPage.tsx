@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { PenLine, ArrowRight } from "lucide-react";
@@ -27,9 +26,7 @@ const LandingPage: React.FC = () => {
           <PenLine className="h-12 w-12 text-primary" />
         </div>
         
-        <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
-          ScribbleSnap
-        </h1>
+        <h1 className="text-4xl font-bold mb-4 text-brand-600">StudyBuddy</h1>
         
         <p className="text-xl text-muted-foreground max-w-prose mx-auto">
           Your intelligent note-taking companion. Take notes, organize your thoughts, and boost your productivity all in one place.

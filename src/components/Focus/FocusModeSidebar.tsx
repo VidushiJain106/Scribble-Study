@@ -25,8 +25,8 @@ export function FocusModeSidebar() {
   return <Sidebar>
       <SidebarHeader className="flex justify-between items-center p-4">
         <div className="flex items-center gap-2">
-          <PenLine className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-semibold">ScribbleSnap</h1>
+          <PenLine className="h-6 w-6 text-brand-600" />
+          <h1 className="text-xl font-semibold text-brand-600">StudyBuddy</h1>
         </div>
       </SidebarHeader>
       
@@ -82,7 +82,7 @@ export function FocusModeSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <Link to="/focus" className="flex items-center gap-2">
-                <Timer className="h-5 w-5 text-note-purple" />
+                <Timer className="h-5 w-5 text-brand-600" />
                 <span>Deep Work</span>
               </Link>
             </SidebarMenuButton>

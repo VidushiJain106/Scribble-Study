@@ -33,7 +33,7 @@ export const useNoteStore = create<NoteState>()(
   notes: [
     {
       id: '1',
-      title: 'Welcome to ScribbleSnap!',
+      title: 'Welcome to StudyBuddy!',
       content: 'This is your first note. Try editing it, add some drawings, or upload an image!',
       createdAt: new Date(),
       updatedAt: new Date(),
